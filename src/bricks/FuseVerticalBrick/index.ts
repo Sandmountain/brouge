@@ -1,0 +1,2 @@
+export { FuseVerticalBrick } from './FuseVerticalBrick';
+

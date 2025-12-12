@@ -1,0 +1,91 @@
+/* Global classes for Phaser - same styles used everywhere */
+:global(.brick.chaos) {
+  background: linear-gradient(135deg, #4a2c1a 0%, #3d2415 25%, #2d1a0f 50%, #1f1309 75%, #2d1a0f 100%);
+  border: 2px solid #8b4513;
+  border-top: 2px solid rgba(139, 100, 50, 0.6);
+  border-left: 2px solid rgba(139, 100, 50, 0.6);
+  border-bottom: 2px solid rgba(31, 19, 9, 0.9);
+  border-right: 2px solid rgba(31, 19, 9, 0.9);
+  box-shadow: 
+    inset 0 3px 6px rgba(139, 100, 50, 0.2),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.6),
+    inset 2px 0 4px rgba(139, 100, 50, 0.15),
+    inset -2px 0 4px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 8px rgba(139, 69, 19, 0.3),
+    0 3px 6px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+:global(.brick.chaos::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    /* Warning stripes */
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 8px,
+      rgba(255, 200, 50, 0.4) 8px,
+      rgba(255, 200, 50, 0.4) 12px
+    ),
+    /* Dark base */
+    linear-gradient(135deg, #4a2c1a 0%, #3d2415 50%, #2d1a0f 100%);
+  animation: chaosWarningFlicker 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes chaosWarningFlicker {
+  0%, 100% { 
+    opacity: 1;
+    filter: brightness(1);
+  }
+  25% { 
+    opacity: 0.85;
+    filter: brightness(0.9);
+  }
+  50% { 
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+  75% { 
+    opacity: 0.9;
+    filter: brightness(0.95);
+  }
+}
+
+:global(.brick.chaos::after) {
+  content: '⚠';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  color: #ffcc44;
+  text-shadow: 
+    0 0 8px rgba(255, 204, 68, 0.8),
+    0 0 16px rgba(255, 204, 68, 0.6),
+    0 0 24px rgba(255, 204, 68, 0.4);
+  animation: chaosWarningPulse 1.2s ease-in-out infinite;
+  pointer-events: none;
+  font-weight: bold;
+  z-index: 2;
+}
+
+@keyframes chaosWarningPulse {
+  0%, 100% { 
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+

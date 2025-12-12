@@ -1,0 +1,19 @@
+/* Global classes for Phaser - same styles used everywhere */
+:global(.brick.fuse-horizontal) {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3009 100%);
+  border: 2px solid #4a7c2a;
+  position: relative;
+  overflow: visible;
+}
+
+:global(.brick.fuse-horizontal .fuse-link) {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  height: 3px;
+  background: linear-gradient(to right, #00ff00 0%, #00cc00 50%, #00ff00 100%);
+  box-shadow: 0 0 4px rgba(0, 255, 0, 0.6);
+}
+

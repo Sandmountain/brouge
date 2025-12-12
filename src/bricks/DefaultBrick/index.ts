@@ -1,0 +1,2 @@
+export { DefaultBrick } from './DefaultBrick';
+

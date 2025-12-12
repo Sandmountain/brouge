@@ -1,0 +1,80 @@
+/* Global classes for Phaser - same styles used everywhere */
+:global(.brick.boost) {
+  background: linear-gradient(135deg, #8b4513 0%, #654321 50%, #4a2c1a 100%);
+  border: 2px solid #5a2a0a;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(139, 69, 19, 0.7),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+:global(.brick.boost::before) {
+  content: '';
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 20%;
+  background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,69,0,0.3) 50%, transparent 70%);
+  animation: ominousGlow 2s infinite ease-in-out;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+:global(.brick.boost::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    /* Lock/keyhole */
+    radial-gradient(circle at 50% 35%, rgba(0,0,0,0.8) 15%, transparent 16%),
+    radial-gradient(circle at 50% 35%, rgba(255,215,0,0.3) 12%, transparent 13%);
+  pointer-events: none;
+}
+
+@keyframes ominousGlow {
+  0%, 100% { 
+    opacity: 0.3;
+    transform: translateX(-50%) scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.3);
+  }
+}
+
+:global(.boost-chest) {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image:
+    /* Chest lid line */
+    linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.4) 30%, transparent 30%),
+    /* Chest straps */
+    linear-gradient(to right, 
+      transparent 15%, 
+      rgba(0,0,0,0.5) 15%, 
+      rgba(0,0,0,0.5) 20%, 
+      transparent 20%,
+      transparent 40%,
+      rgba(0,0,0,0.5) 40%,
+      rgba(0,0,0,0.5) 45%,
+      transparent 45%,
+      transparent 55%,
+      rgba(0,0,0,0.5) 55%,
+      rgba(0,0,0,0.5) 60%,
+      transparent 60%,
+      transparent 80%,
+      rgba(0,0,0,0.5) 80%,
+      rgba(0,0,0,0.5) 85%,
+      transparent 85%);
+  background-size: 100% 100%;
+}
+

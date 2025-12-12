@@ -1,0 +1,2 @@
+export { FuseHorizontalBrick } from './FuseHorizontalBrick';
+

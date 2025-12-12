@@ -1,0 +1,132 @@
+/* Global classes for Phaser - same styles used everywhere */
+:global(.brick.gold) {
+  background: 
+    /* Rich gold base with depth */
+    linear-gradient(
+      135deg,
+      #ffd700 0%,
+      #ffed4e 15%,
+      #ffd700 30%,
+      #ffb700 45%,
+      #ffd700 60%,
+      #ffed4e 75%,
+      #ffb700 90%,
+      #ffd700 100%
+    ),
+    /* Subtle texture */
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 215, 0, 0.1) 3px,
+      rgba(255, 215, 0, 0.1) 4px
+    );
+  border: 3px solid #ffed4e;
+  border-top: 3px solid rgba(255, 250, 200, 0.9);
+  border-left: 3px solid rgba(255, 250, 200, 0.9);
+  border-bottom: 3px solid rgba(255, 184, 0, 0.8);
+  border-right: 3px solid rgba(255, 184, 0, 0.8);
+  box-shadow: 
+    inset 0 4px 8px rgba(255, 250, 200, 0.6),
+    inset 0 -4px 8px rgba(255, 184, 0, 0.4),
+    inset 3px 0 6px rgba(255, 250, 200, 0.3),
+    inset -3px 0 6px rgba(255, 184, 0, 0.3),
+    0 0 20px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 215, 0, 0.4),
+    0 3px 6px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  animation: goldShimmer 3s ease-in-out infinite;
+}
+
+@keyframes goldShimmer {
+  0%, 100% {
+    box-shadow: 
+      inset 0 4px 8px rgba(255, 250, 200, 0.6),
+      inset 0 -4px 8px rgba(255, 184, 0, 0.4),
+      inset 3px 0 6px rgba(255, 250, 200, 0.3),
+      inset -3px 0 6px rgba(255, 184, 0, 0.3),
+      0 0 20px rgba(255, 215, 0, 0.8),
+      0 0 40px rgba(255, 215, 0, 0.4),
+      0 3px 6px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 
+      inset 0 4px 8px rgba(255, 250, 200, 0.8),
+      inset 0 -4px 8px rgba(255, 184, 0, 0.6),
+      inset 3px 0 6px rgba(255, 250, 200, 0.5),
+      inset -3px 0 6px rgba(255, 184, 0, 0.5),
+      0 0 30px rgba(255, 215, 0, 1),
+      0 0 60px rgba(255, 215, 0, 0.6),
+      0 3px 6px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:global(.brick.gold::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    /* Rich highlights */
+    radial-gradient(
+      ellipse at 30% 30%,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.2) 20%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 70% 70%,
+      rgba(255, 184, 0, 0.3) 0%,
+      rgba(255, 184, 0, 0.15) 20%,
+      transparent 50%
+    );
+  pointer-events: none;
+  border-radius: 3px;
+}
+
+:global(.brick.gold::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    /* Inner glow */
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba(255, 184, 0, 0.2) 100%
+    );
+  pointer-events: none;
+  border-radius: 3px;
+}
+
+:global(.gold-shine) {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.7) 45%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.7) 55%,
+    transparent 65%
+  );
+  animation: goldShine 2.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes goldShine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+

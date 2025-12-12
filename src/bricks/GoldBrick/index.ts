@@ -1,0 +1,2 @@
+export { GoldBrick } from './GoldBrick';
+

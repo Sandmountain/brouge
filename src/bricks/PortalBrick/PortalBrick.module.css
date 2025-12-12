@@ -1,0 +1,78 @@
+/* Global classes for Phaser - same styles used everywhere */
+:global(.brick.portal) {
+  background: linear-gradient(135deg, #ff00ff 0%, #ff1493 25%, #8b008b 50%, #ff1493 75%, #ff00ff 100%);
+  border: 2px solid #ff69b4;
+  box-shadow: 
+    0 0 15px rgba(255, 0, 255, 0.8),
+    inset 0 0 15px rgba(255, 20, 147, 0.4),
+    0 0 30px rgba(255, 0, 255, 0.6);
+  position: relative;
+  overflow: hidden;
+  animation: portalPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes portalPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 15px rgba(255, 0, 255, 0.8),
+      inset 0 0 15px rgba(255, 20, 147, 0.4),
+      0 0 30px rgba(255, 0, 255, 0.6);
+  }
+  50% { 
+    box-shadow: 
+      0 0 25px rgba(255, 0, 255, 1),
+      inset 0 0 25px rgba(255, 20, 147, 0.6),
+      0 0 50px rgba(255, 0, 255, 0.9);
+  }
+}
+
+:global(.brick.portal::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: 
+    repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(255, 0, 255, 0.3) 0deg,
+      rgba(255, 20, 147, 0.2) 30deg,
+      rgba(139, 0, 139, 0.3) 60deg,
+      rgba(255, 20, 147, 0.2) 90deg,
+      rgba(255, 0, 255, 0.3) 120deg
+    );
+  animation: portalSwirl 3s linear infinite;
+  pointer-events: none;
+  border-radius: 3px;
+  transform-origin: center center;
+  overflow: hidden;
+}
+
+@keyframes portalSwirl {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+:global(.brick.portal::after) {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  height: 50%;
+  z-index: 3;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 0, 255, 0.6) 30%,
+    rgba(255, 20, 147, 0.4) 60%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  animation: portalPulse 1s ease-in-out infinite;
+  pointer-events: none;
+}
+

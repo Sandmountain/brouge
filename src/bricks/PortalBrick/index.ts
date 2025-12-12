@@ -1,0 +1,2 @@
+export { PortalBrick } from './PortalBrick';
+
