@@ -165,332 +165,9 @@
   z-index: 20; /* Ensure label is above everything */
 }
 
-/* Brick type preview styling - match game blocks */
-.brick-type-preview.default {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
-}
-
-.brick-type-preview.metal {
-  background: 
-    linear-gradient(
-      135deg,
-      #b8b8b8 0%,
-      #a0a0a0 15%,
-      #888888 30%,
-      #707070 45%,
-      #888888 60%,
-      #a0a0a0 75%,
-      #b8b8b8 100%
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1px,
-      rgba(255, 255, 255, 0.1) 1px,
-      rgba(255, 255, 255, 0.1) 2px,
-      transparent 2px,
-      transparent 3px,
-      rgba(0, 0, 0, 0.1) 3px,
-      rgba(0, 0, 0, 0.1) 4px
-    );
-  border: 2px solid #666666;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    inset 0 2px 4px rgba(255, 255, 255, 0.3),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
-    0 0 12px rgba(136, 136, 136, 0.6),
-    0 2px 4px rgba(0, 0, 0, 0.4);
-}
-
-.brick-type-preview.metal::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.4) 50%,
-    transparent 70%
-  );
-  animation: metalShine 3s infinite;
-  pointer-events: none;
-}
-
-.brick-type-preview.metal::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.15) 0%,
-      transparent 20%,
-      transparent 80%,
-      rgba(0, 0, 0, 0.15) 100%
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 4px,
-      rgba(255, 255, 255, 0.05) 4px,
-      rgba(255, 255, 255, 0.05) 5px
-    );
-  pointer-events: none;
-  border-radius: 3px;
-}
-
-.brick-type-preview.unbreakable {
-  background: 
-    linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #252525 50%, #151515 75%, #1f1f1f 100%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.1) 2px,
-      rgba(0, 0, 0, 0.1) 4px
-    );
-  border: 3px solid #555555 !important;
-  box-shadow: 
-    inset 0 3px 6px rgba(0, 0, 0, 0.9),
-    inset 0 -2px 4px rgba(255, 255, 255, 0.05),
-    0 0 15px rgba(85, 85, 85, 0.6),
-    0 2px 4px rgba(0, 0, 0, 0.8);
-  position: relative;
-  overflow: hidden;
-}
-
-.brick-type-preview.unbreakable::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 12px,
-      rgba(100, 100, 100, 0.3) 12px,
-      rgba(100, 100, 100, 0.3) 13px
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 12px,
-      rgba(100, 100, 100, 0.3) 12px,
-      rgba(100, 100, 100, 0.3) 13px
-    ),
-    radial-gradient(circle at 10% 10%, rgba(150, 150, 150, 0.4) 2px, transparent 3px),
-    radial-gradient(circle at 90% 10%, rgba(150, 150, 150, 0.4) 2px, transparent 3px),
-    radial-gradient(circle at 10% 90%, rgba(150, 150, 150, 0.4) 2px, transparent 3px),
-    radial-gradient(circle at 90% 90%, rgba(150, 150, 150, 0.4) 2px, transparent 3px);
-  pointer-events: none;
-  opacity: 0.8;
-}
-
-.brick-type-preview.unbreakable::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, transparent 5%, transparent 95%, rgba(0, 0, 0, 0.6) 100%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 5%, transparent 95%, rgba(0, 0, 0, 0.6) 100%);
-  pointer-events: none;
-  border-radius: 2px;
-}
-
-.brick-type-preview.tnt {
-  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
-  animation: pulse 2s infinite;
-  box-shadow: 0 0 15px rgba(255,0,0,0.7);
-}
-
-.brick-type-preview.gold {
-  background: 
-    linear-gradient(
-      135deg,
-      #ffd700 0%,
-      #ffed4e 15%,
-      #ffd700 30%,
-      #ffb700 45%,
-      #ffd700 60%,
-      #ffed4e 75%,
-      #ffb700 90%,
-      #ffd700 100%
-    ),
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 3px,
-      rgba(255, 215, 0, 0.1) 3px,
-      rgba(255, 215, 0, 0.1) 4px
-    );
-  border: 3px solid #ffed4e;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    inset 0 3px 6px rgba(255, 215, 0, 0.5),
-    inset 0 -3px 6px rgba(255, 184, 0, 0.3),
-    0 0 20px rgba(255, 215, 0, 0.8),
-    0 0 40px rgba(255, 215, 0, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.3);
-  animation: goldShimmer 3s ease-in-out infinite;
-}
-
-.brick-type-preview.gold::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: 
-    radial-gradient(
-      ellipse at 30% 30%,
-      rgba(255, 255, 255, 0.4) 0%,
-      rgba(255, 255, 255, 0.2) 20%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at 70% 70%,
-      rgba(255, 184, 0, 0.3) 0%,
-      rgba(255, 184, 0, 0.15) 20%,
-      transparent 50%
-    );
-  pointer-events: none;
-  border-radius: 3px;
-}
-
-.brick-type-preview.gold::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.2) 0%,
-      transparent 30%,
-      transparent 70%,
-      rgba(255, 184, 0, 0.2) 100%
-    );
-  pointer-events: none;
-  border-radius: 3px;
-}
-
-.brick-type-preview.boost {
-  background: linear-gradient(135deg, #8b4513 0%, #654321 100%);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 15px rgba(139, 69, 19, 0.7);
-  border: 2px solid #5a2a0a;
-}
-
-.brick-type-preview.boost::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: 
-    /* Chest lid */
-    linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.3) 30%, transparent 30%),
-    /* Chest straps */
-    linear-gradient(to right, rgba(0,0,0,0.4) 20%, transparent 20%, transparent 40%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.4) 60%, transparent 60%, transparent 80%, rgba(0,0,0,0.4) 80%);
-  opacity: 0.8;
-}
-
-.brick-type-preview.boost::after {
-  content: '';
-  position: absolute;
-  top: 25%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30%;
-  height: 20%;
-  background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, transparent 70%);
-  animation: ominous-glow 2s infinite ease-in-out;
-  border-radius: 50%;
-}
-
-@keyframes ominous-glow {
-  0%, 100% { 
-    opacity: 0.3;
-    transform: translateX(-50%) scale(1);
-  }
-  50% { 
-    opacity: 0.8;
-    transform: translateX(-50%) scale(1.2);
-  }
-}
-
-/* Use the same styles as grid-cell.chaos for the preview button */
-.brick-type-preview.chaos {
-  background: linear-gradient(135deg, #4a2c1a 0%, #3d2415 25%, #2d1a0f 50%, #1f1309 75%, #2d1a0f 100%);
-  border: 2px solid #8b4513;
-  border-radius: 0;
-  box-shadow: 
-    inset 0 2px 4px rgba(0, 0, 0, 0.4),
-    inset 0 -2px 4px rgba(255, 255, 255, 0.05),
-    0 2px 4px rgba(0, 0, 0, 0.5),
-    0 0 8px rgba(139, 69, 19, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.brick-type-preview.chaos::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: 
-    /* Warning stripes */
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 8px,
-      rgba(255, 200, 50, 0.4) 8px,
-      rgba(255, 200, 50, 0.4) 12px
-    ),
-    /* Dark base */
-    linear-gradient(135deg, #4a2c1a 0%, #3d2415 50%, #2d1a0f 100%);
-  animation: chaosWarningFlicker 2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.brick-type-preview.chaos::after {
-  content: '⚠';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 18px;
-  color: #ffcc44;
-  text-shadow: 
-    0 0 8px rgba(255, 204, 68, 0.8),
-    0 0 16px rgba(255, 204, 68, 0.6),
-    0 0 24px rgba(255, 204, 68, 0.4);
-  animation: chaosWarningPulse 1.2s ease-in-out infinite;
-  pointer-events: none;
-  font-weight: bold;
-  z-index: 2;
-}
+/* Brick type preview styling - uses global brick classes from CSS modules */
+/* The .brick class is added to preview buttons, so they inherit all global brick styles */
+/* We only need to override preview-specific layout constraints here */
 
 .color-picker {
   display: grid;
@@ -651,18 +328,21 @@
 /* Brick type specific styles */
 .grid-cell.has-brick {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3),
-              0 1px 2px rgba(255, 255, 255, 0.1);
+    0 1px 2px rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
 }
 
+.grid-cell.fuse-path-preview,
+.grid-cell.drag-path-preview {
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+}
 
 /* Metal Block - Metallic appearance with shine */
 /* Metal Block - Brushed metallic appearance with texture */
 .grid-cell.metal {
   background: 
-    /* Metallic base gradient */
-    linear-gradient(
+    /* Metallic base gradient */ linear-gradient(
       135deg,
       #b8b8b8 0%,
       #a0a0a0 15%,
@@ -673,35 +353,33 @@
       #b8b8b8 100%
     ),
     /* Brushed metal texture - horizontal lines */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1px,
-      rgba(255, 255, 255, 0.1) 1px,
-      rgba(255, 255, 255, 0.1) 2px,
-      transparent 2px,
-      transparent 3px,
-      rgba(0, 0, 0, 0.1) 3px,
-      rgba(0, 0, 0, 0.1) 4px
-    );
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 1px,
+        rgba(255, 255, 255, 0.1) 1px,
+        rgba(255, 255, 255, 0.1) 2px,
+        transparent 2px,
+        transparent 3px,
+        rgba(0, 0, 0, 0.1) 3px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
   border: 2px solid #666666;
   border-top: 2px solid rgba(200, 200, 200, 0.6);
   border-left: 2px solid rgba(200, 200, 200, 0.6);
   border-bottom: 2px solid rgba(50, 50, 50, 0.8);
   border-right: 2px solid rgba(50, 50, 50, 0.8);
-  box-shadow: 
-    inset 0 3px 6px rgba(255, 255, 255, 0.4),
+  box-shadow: inset 0 3px 6px rgba(255, 255, 255, 0.4),
     inset 0 -3px 6px rgba(0, 0, 0, 0.6),
     inset 2px 0 4px rgba(255, 255, 255, 0.2),
-    inset -2px 0 4px rgba(0, 0, 0, 0.4),
-    0 0 12px rgba(136, 136, 136, 0.6),
+    inset -2px 0 4px rgba(0, 0, 0, 0.4), 0 0 12px rgba(136, 136, 136, 0.6),
     0 3px 6px rgba(0, 0, 0, 0.5);
   position: relative;
   overflow: hidden;
 }
 
 .grid-cell.metal::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   left: -50%;
@@ -718,8 +396,12 @@
 }
 
 @keyframes metalShine {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
 }
 
 .metal-rivets {
@@ -727,30 +409,60 @@
   width: 100%;
   height: 100%;
   background-image: 
-    /* Rivets at corners */
-    radial-gradient(circle at 15% 25%, rgba(0, 0, 0, 0.5) 1.5px, transparent 2px),
-    radial-gradient(circle at 85% 25%, rgba(0, 0, 0, 0.5) 1.5px, transparent 2px),
-    radial-gradient(circle at 15% 75%, rgba(0, 0, 0, 0.5) 1.5px, transparent 2px),
-    radial-gradient(circle at 85% 75%, rgba(0, 0, 0, 0.5) 1.5px, transparent 2px),
+    /* Rivets at corners */ radial-gradient(
+      circle at 15% 25%,
+      rgba(0, 0, 0, 0.5) 1.5px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 85% 25%,
+      rgba(0, 0, 0, 0.5) 1.5px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 15% 75%,
+      rgba(0, 0, 0, 0.5) 1.5px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 85% 75%,
+      rgba(0, 0, 0, 0.5) 1.5px,
+      transparent 2px
+    ),
     /* Rivet highlights */
-    radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1px),
-    radial-gradient(circle at 85% 25%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1px),
-    radial-gradient(circle at 15% 75%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1px),
-    radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1px);
+      radial-gradient(
+        circle at 15% 25%,
+        rgba(255, 255, 255, 0.3) 0.5px,
+        transparent 1px
+      ),
+    radial-gradient(
+      circle at 85% 25%,
+      rgba(255, 255, 255, 0.3) 0.5px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 15% 75%,
+      rgba(255, 255, 255, 0.3) 0.5px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 85% 75%,
+      rgba(255, 255, 255, 0.3) 0.5px,
+      transparent 1px
+    );
   background-size: 100% 100%;
   pointer-events: none;
 }
 
 .grid-cell.metal::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: 
-    /* Metallic highlights */
-    linear-gradient(
+    /* Metallic highlights */ linear-gradient(
       to bottom,
       rgba(255, 255, 255, 0.15) 0%,
       transparent 20%,
@@ -758,13 +470,13 @@
       rgba(0, 0, 0, 0.15) 100%
     ),
     /* Vertical brushed texture */
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 4px,
-      rgba(255, 255, 255, 0.05) 4px,
-      rgba(255, 255, 255, 0.05) 5px
-    );
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 255, 255, 0.05) 4px,
+        rgba(255, 255, 255, 0.05) 5px
+      );
   pointer-events: none;
   border-radius: 3px;
 }
@@ -778,35 +490,30 @@
   border-bottom: 2px solid rgba(153, 0, 0, 0.9);
   border-right: 2px solid rgba(153, 0, 0, 0.9);
   animation: tntPulse 1.5s ease-in-out infinite;
-  box-shadow: 
-    0 0 10px rgba(255, 0, 0, 0.6),
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.6),
     inset 0 3px 6px rgba(255, 255, 255, 0.3),
     inset 0 -3px 6px rgba(102, 0, 0, 0.5),
     inset 2px 0 4px rgba(255, 200, 200, 0.2),
-    inset -2px 0 4px rgba(102, 0, 0, 0.4),
-    0 3px 6px rgba(0, 0, 0, 0.4);
+    inset -2px 0 4px rgba(102, 0, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes tntPulse {
-  0%, 100% { 
+  0%,
+  100% {
     transform: scale(1);
-    box-shadow: 
-      0 0 10px rgba(255, 0, 0, 0.6),
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.6),
       inset 0 3px 6px rgba(255, 255, 255, 0.3),
       inset 0 -3px 6px rgba(102, 0, 0, 0.5),
       inset 2px 0 4px rgba(255, 200, 200, 0.2),
-      inset -2px 0 4px rgba(102, 0, 0, 0.4),
-      0 3px 6px rgba(0, 0, 0, 0.4);
+      inset -2px 0 4px rgba(102, 0, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.4);
   }
-  50% { 
+  50% {
     transform: scale(1.02);
-    box-shadow: 
-      0 0 15px rgba(255, 0, 0, 0.9),
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.9),
       inset 0 3px 6px rgba(255, 255, 255, 0.4),
       inset 0 -3px 6px rgba(102, 0, 0, 0.6),
       inset 2px 0 4px rgba(255, 200, 200, 0.3),
-      inset -2px 0 4px rgba(102, 0, 0, 0.5),
-      0 3px 6px rgba(0, 0, 0, 0.4);
+      inset -2px 0 4px rgba(102, 0, 0, 0.5), 0 3px 6px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -824,15 +531,21 @@
 }
 
 @keyframes fuseFlicker {
-  0%, 100% { opacity: 1; transform: translateX(-50%) scaleY(1); }
-  50% { opacity: 0.7; transform: translateX(-50%) scaleY(0.9); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(-50%) scaleY(0.9);
+  }
 }
 
 /* Gold Block - Shimmering treasure */
 .grid-cell.gold {
   background: 
-    /* Rich gold base with depth */
-    linear-gradient(
+    /* Rich gold base with depth */ linear-gradient(
       135deg,
       #ffd700 0%,
       #ffed4e 15%,
@@ -844,37 +557,35 @@
       #ffd700 100%
     ),
     /* Subtle texture */
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 3px,
-      rgba(255, 215, 0, 0.1) 3px,
-      rgba(255, 215, 0, 0.1) 4px
-    );
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(255, 215, 0, 0.1) 3px,
+        rgba(255, 215, 0, 0.1) 4px
+      );
   border: 2px solid #ffd700;
   border-top: 2px solid rgba(255, 250, 200, 0.8);
   border-left: 2px solid rgba(255, 250, 200, 0.8);
   border-bottom: 2px solid rgba(255, 184, 0, 0.9);
   border-right: 2px solid rgba(255, 184, 0, 0.9);
-  box-shadow: 
-    inset 0 4px 8px rgba(255, 250, 200, 0.6),
+  box-shadow: inset 0 4px 8px rgba(255, 250, 200, 0.6),
     inset 0 -4px 8px rgba(255, 184, 0, 0.4),
     inset 3px 0 6px rgba(255, 250, 200, 0.3),
-    inset -3px 0 6px rgba(255, 184, 0, 0.3),
-    0 0 20px rgba(255, 215, 0, 0.8),
-    0 0 40px rgba(255, 215, 0, 0.4),
-    0 3px 6px rgba(0, 0, 0, 0.4);
+    inset -3px 0 6px rgba(255, 184, 0, 0.3), 0 0 20px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 215, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
   animation: goldShimmer 3s ease-in-out infinite;
 }
 
 @keyframes goldShimmer {
-  0%, 100% { 
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
-  50% { 
+  50% {
     opacity: 0.8;
     transform: scale(1.05);
   }
@@ -884,8 +595,7 @@
 /* Gold Block - Rich, luxurious precious metal */
 .grid-cell.gold {
   background: 
-    /* Rich gold base with depth */
-    linear-gradient(
+    /* Rich gold base with depth */ linear-gradient(
       135deg,
       #ffd700 0%,
       #ffed4e 15%,
@@ -897,51 +607,43 @@
       #ffd700 100%
     ),
     /* Subtle texture */
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 3px,
-      rgba(255, 215, 0, 0.1) 3px,
-      rgba(255, 215, 0, 0.1) 4px
-    );
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(255, 215, 0, 0.1) 3px,
+        rgba(255, 215, 0, 0.1) 4px
+      );
   border: 3px solid #ffed4e;
   border-top: 3px solid rgba(255, 250, 200, 0.9);
   border-left: 3px solid rgba(255, 250, 200, 0.9);
   border-bottom: 3px solid rgba(255, 184, 0, 0.8);
   border-right: 3px solid rgba(255, 184, 0, 0.8);
-  box-shadow: 
-    inset 0 4px 8px rgba(255, 250, 200, 0.6),
+  box-shadow: inset 0 4px 8px rgba(255, 250, 200, 0.6),
     inset 0 -4px 8px rgba(255, 184, 0, 0.4),
     inset 3px 0 6px rgba(255, 250, 200, 0.3),
-    inset -3px 0 6px rgba(255, 184, 0, 0.3),
-    0 0 20px rgba(255, 215, 0, 0.8),
-    0 0 40px rgba(255, 215, 0, 0.4),
-    0 3px 6px rgba(0, 0, 0, 0.4);
+    inset -3px 0 6px rgba(255, 184, 0, 0.3), 0 0 20px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 215, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
   animation: goldShimmer 3s ease-in-out infinite;
 }
 
 @keyframes goldShimmer {
-  0%, 100% {
-    box-shadow: 
-      inset 0 4px 8px rgba(255, 250, 200, 0.6),
+  0%,
+  100% {
+    box-shadow: inset 0 4px 8px rgba(255, 250, 200, 0.6),
       inset 0 -4px 8px rgba(255, 184, 0, 0.4),
       inset 3px 0 6px rgba(255, 250, 200, 0.3),
-      inset -3px 0 6px rgba(255, 184, 0, 0.3),
-      0 0 20px rgba(255, 215, 0, 0.8),
-      0 0 40px rgba(255, 215, 0, 0.4),
-      0 3px 6px rgba(0, 0, 0, 0.4);
+      inset -3px 0 6px rgba(255, 184, 0, 0.3), 0 0 20px rgba(255, 215, 0, 0.8),
+      0 0 40px rgba(255, 215, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.4);
   }
   50% {
-    box-shadow: 
-      inset 0 4px 8px rgba(255, 250, 200, 0.8),
+    box-shadow: inset 0 4px 8px rgba(255, 250, 200, 0.8),
       inset 0 -4px 8px rgba(255, 184, 0, 0.6),
       inset 3px 0 6px rgba(255, 250, 200, 0.5),
-      inset -3px 0 6px rgba(255, 184, 0, 0.5),
-      0 0 30px rgba(255, 215, 0, 1),
-      0 0 60px rgba(255, 215, 0, 0.6),
-      0 3px 6px rgba(0, 0, 0, 0.4);
+      inset -3px 0 6px rgba(255, 184, 0, 0.5), 0 0 30px rgba(255, 215, 0, 1),
+      0 0 60px rgba(255, 215, 0, 0.6), 0 3px 6px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -964,20 +666,23 @@
 }
 
 @keyframes goldShine {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
 }
 
 .grid-cell.gold::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: 
-    /* Rich highlights */
-    radial-gradient(
+    /* Rich highlights */ radial-gradient(
       ellipse at 30% 30%,
       rgba(255, 255, 255, 0.4) 0%,
       rgba(255, 255, 255, 0.2) 20%,
@@ -994,21 +699,20 @@
 }
 
 .grid-cell.gold::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: 
-    /* Inner glow */
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.2) 0%,
-      transparent 30%,
-      transparent 70%,
-      rgba(255, 184, 0, 0.2) 100%
-    );
+    /* Inner glow */ linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(255, 184, 0, 0.2) 100%
+  );
   pointer-events: none;
   border-radius: 3px;
 }
@@ -1018,10 +722,8 @@
 .grid-cell.boost {
   background: linear-gradient(135deg, #8b4513 0%, #654321 50%, #4a2c1a 100%);
   border: 2px solid #5a2a0a;
-  box-shadow: 
-    inset 0 2px 4px rgba(0, 0, 0, 0.5),
-    0 0 15px rgba(139, 69, 19, 0.7),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(139, 69, 19, 0.7), inset 0 -2px 4px rgba(0, 0, 0, 0.8);
   position: relative;
   overflow: hidden;
 }
@@ -1032,93 +734,114 @@
   height: 100%;
   pointer-events: none;
   background-image:
-    /* Chest lid line */
-    linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.4) 30%, transparent 30%),
+    /* Chest lid line */ linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.4) 30%,
+      transparent 30%
+    ),
     /* Chest straps */
-    linear-gradient(to right, 
-      transparent 15%, 
-      rgba(0,0,0,0.5) 15%, 
-      rgba(0,0,0,0.5) 20%, 
-      transparent 20%,
-      transparent 40%,
-      rgba(0,0,0,0.5) 40%,
-      rgba(0,0,0,0.5) 45%,
-      transparent 45%,
-      transparent 55%,
-      rgba(0,0,0,0.5) 55%,
-      rgba(0,0,0,0.5) 60%,
-      transparent 60%,
-      transparent 80%,
-      rgba(0,0,0,0.5) 80%,
-      rgba(0,0,0,0.5) 85%,
-      transparent 85%);
+      linear-gradient(
+        to right,
+        transparent 15%,
+        rgba(0, 0, 0, 0.5) 15%,
+        rgba(0, 0, 0, 0.5) 20%,
+        transparent 20%,
+        transparent 40%,
+        rgba(0, 0, 0, 0.5) 40%,
+        rgba(0, 0, 0, 0.5) 45%,
+        transparent 45%,
+        transparent 55%,
+        rgba(0, 0, 0, 0.5) 55%,
+        rgba(0, 0, 0, 0.5) 60%,
+        transparent 60%,
+        transparent 80%,
+        rgba(0, 0, 0, 0.5) 80%,
+        rgba(0, 0, 0, 0.5) 85%,
+        transparent 85%
+      );
   background-size: 100% 100%;
 }
 
 .grid-cell.boost::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 25%;
   left: 50%;
   transform: translateX(-50%);
   width: 30%;
   height: 20%;
-  background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,69,0,0.3) 50%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 215, 0, 0.4) 0%,
+    rgba(255, 69, 0, 0.3) 50%,
+    transparent 70%
+  );
   animation: ominous-glow 2s infinite ease-in-out;
   border-radius: 50%;
   z-index: 1;
 }
 
 .grid-cell.boost::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: 
-    /* Lock/keyhole */
-    radial-gradient(circle at 50% 35%, rgba(0,0,0,0.8) 15%, transparent 16%),
-    radial-gradient(circle at 50% 35%, rgba(255,215,0,0.3) 12%, transparent 13%);
+    /* Lock/keyhole */ radial-gradient(
+      circle at 50% 35%,
+      rgba(0, 0, 0, 0.8) 15%,
+      transparent 16%
+    ),
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(255, 215, 0, 0.3) 12%,
+      transparent 13%
+    );
   pointer-events: none;
 }
 
 @keyframes ominous-glow {
-  0%, 100% { 
+  0%,
+  100% {
     opacity: 0.3;
     transform: translateX(-50%) scale(1);
   }
-  50% { 
+  50% {
     opacity: 0.8;
     transform: translateX(-50%) scale(1.3);
   }
 }
 
 .grid-cell.boost:hover {
-  box-shadow: 
-    inset 0 2px 4px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(255, 69, 0, 0.9),
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 69, 0, 0.9),
     inset 0 -2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* Unbreakable Block - Fortified reinforced armor */
 .grid-cell.unbreakable {
   background: 
-    /* Reinforced concrete/metal base */
-    linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #252525 50%, #151515 75%, #1f1f1f 100%),
+    /* Reinforced concrete/metal base */ linear-gradient(
+      135deg,
+      #2a2a2a 0%,
+      #1a1a1a 25%,
+      #252525 50%,
+      #151515 75%,
+      #1f1f1f 100%
+    ),
     /* Texture overlay */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.1) 2px,
-      rgba(0, 0, 0, 0.1) 4px
-    );
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
   border: 3px solid #555555;
-  box-shadow: 
-    inset 0 3px 6px rgba(0, 0, 0, 0.9),
-    inset 0 -2px 4px rgba(255, 255, 255, 0.05),
-    0 0 15px rgba(85, 85, 85, 0.6),
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.9),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.05), 0 0 15px rgba(85, 85, 85, 0.6),
     0 2px 4px rgba(0, 0, 0, 0.8);
   position: relative;
   overflow: hidden;
@@ -1129,8 +852,7 @@
   width: 100%;
   height: 100%;
   background-image: 
-    /* Reinforcement bars - diagonal */
-    repeating-linear-gradient(
+    /* Reinforcement bars - diagonal */ repeating-linear-gradient(
       45deg,
       transparent,
       transparent 12px,
@@ -1138,50 +860,100 @@
       rgba(100, 100, 100, 0.3) 13px
     ),
     /* Reinforcement bars - opposite diagonal */
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 12px,
-      rgba(100, 100, 100, 0.3) 12px,
-      rgba(100, 100, 100, 0.3) 13px
-    ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 12px,
+        rgba(100, 100, 100, 0.3) 12px,
+        rgba(100, 100, 100, 0.3) 13px
+      ),
     /* Corner reinforcements */
-    radial-gradient(circle at 10% 10%, rgba(150, 150, 150, 0.4) 2px, transparent 3px),
-    radial-gradient(circle at 90% 10%, rgba(150, 150, 150, 0.4) 2px, transparent 3px),
-    radial-gradient(circle at 10% 90%, rgba(150, 150, 150, 0.4) 2px, transparent 3px),
-    radial-gradient(circle at 90% 90%, rgba(150, 150, 150, 0.4) 2px, transparent 3px);
+      radial-gradient(
+        circle at 10% 10%,
+        rgba(150, 150, 150, 0.4) 2px,
+        transparent 3px
+      ),
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(150, 150, 150, 0.4) 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 10% 90%,
+      rgba(150, 150, 150, 0.4) 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 90% 90%,
+      rgba(150, 150, 150, 0.4) 2px,
+      transparent 3px
+    );
   pointer-events: none;
   opacity: 0.8;
 }
 
 .grid-cell.unbreakable::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: 
-    /* Metal plate edges */
-    linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, transparent 5%, transparent 95%, rgba(0, 0, 0, 0.6) 100%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 5%, transparent 95%, rgba(0, 0, 0, 0.6) 100%);
+    /* Metal plate edges */ linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.6) 0%,
+      transparent 5%,
+      transparent 95%,
+      rgba(0, 0, 0, 0.6) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.6) 0%,
+      transparent 5%,
+      transparent 95%,
+      rgba(0, 0, 0, 0.6) 100%
+    );
   pointer-events: none;
   border-radius: 2px;
 }
 
 .grid-cell.unbreakable::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: 
-    /* Inner border for depth */
-    linear-gradient(to right, transparent 0%, rgba(100, 100, 100, 0.3) 1%, rgba(100, 100, 100, 0.3) 2%, transparent 3%),
-    linear-gradient(to right, transparent 97%, rgba(100, 100, 100, 0.3) 98%, rgba(100, 100, 100, 0.3) 99%, transparent 100%),
-    linear-gradient(to bottom, transparent 0%, rgba(100, 100, 100, 0.3) 1%, rgba(100, 100, 100, 0.3) 2%, transparent 3%),
-    linear-gradient(to bottom, transparent 97%, rgba(100, 100, 100, 0.3) 98%, rgba(100, 100, 100, 0.3) 99%, transparent 100%);
+    /* Inner border for depth */ linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(100, 100, 100, 0.3) 1%,
+      rgba(100, 100, 100, 0.3) 2%,
+      transparent 3%
+    ),
+    linear-gradient(
+      to right,
+      transparent 97%,
+      rgba(100, 100, 100, 0.3) 98%,
+      rgba(100, 100, 100, 0.3) 99%,
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(100, 100, 100, 0.3) 1%,
+      rgba(100, 100, 100, 0.3) 2%,
+      transparent 3%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 97%,
+      rgba(100, 100, 100, 0.3) 98%,
+      rgba(100, 100, 100, 0.3) 99%,
+      transparent 100%
+    );
   pointer-events: none;
   border-radius: 2px;
 }
@@ -1192,69 +964,66 @@
   border-left: 2px solid rgba(255, 255, 255, 0.5);
   border-bottom: 2px solid rgba(0, 0, 0, 0.4);
   border-right: 2px solid rgba(0, 0, 0, 0.4);
-  box-shadow: 
-    inset 0 3px 6px rgba(255, 255, 255, 0.3),
+  box-shadow: inset 0 3px 6px rgba(255, 255, 255, 0.3),
     inset 0 -3px 6px rgba(0, 0, 0, 0.4),
     inset 2px 0 4px rgba(255, 255, 255, 0.2),
-    inset -2px 0 4px rgba(0, 0, 0, 0.3),
-    0 3px 6px rgba(0, 0, 0, 0.4);
+    inset -2px 0 4px rgba(0, 0, 0, 0.3), 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 .grid-cell.default.has-brick:hover {
   transform: translateY(-1px);
-  box-shadow: 
-    inset 0 3px 6px rgba(255, 255, 255, 0.3),
+  box-shadow: inset 0 3px 6px rgba(255, 255, 255, 0.3),
     inset 0 -3px 6px rgba(0, 0, 0, 0.4),
     inset 2px 0 4px rgba(255, 255, 255, 0.2),
-    inset -2px 0 4px rgba(0, 0, 0, 0.3),
-    0 4px 8px rgba(0, 0, 0, 0.5);
+    inset -2px 0 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* Portal Block - Using old chaos design (magenta/purple swirling) */
 .grid-cell.portal {
-  background: linear-gradient(135deg, #ff00ff 0%, #ff1493 25%, #8b008b 50%, #ff1493 75%, #ff00ff 100%);
+  background: linear-gradient(
+    135deg,
+    #ff00ff 0%,
+    #ff1493 25%,
+    #8b008b 50%,
+    #ff1493 75%,
+    #ff00ff 100%
+  );
   border: 2px solid #ff69b4;
-  box-shadow: 
-    0 0 15px rgba(255, 0, 255, 0.8),
-    inset 0 0 15px rgba(255, 20, 147, 0.4),
-    0 0 30px rgba(255, 0, 255, 0.6);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.8),
+    inset 0 0 15px rgba(255, 20, 147, 0.4), 0 0 30px rgba(255, 0, 255, 0.6);
   position: relative;
   overflow: hidden;
   animation: portalPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes portalPulse {
-  0%, 100% { 
-    box-shadow: 
-      0 0 15px rgba(255, 0, 255, 0.8),
-      inset 0 0 15px rgba(255, 20, 147, 0.4),
-      0 0 30px rgba(255, 0, 255, 0.6);
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.8),
+      inset 0 0 15px rgba(255, 20, 147, 0.4), 0 0 30px rgba(255, 0, 255, 0.6);
   }
-  50% { 
-    box-shadow: 
-      0 0 25px rgba(255, 0, 255, 1),
-      inset 0 0 25px rgba(255, 20, 147, 0.6),
-      0 0 50px rgba(255, 0, 255, 0.9);
+  50% {
+    box-shadow: 0 0 25px rgba(255, 0, 255, 1),
+      inset 0 0 25px rgba(255, 20, 147, 0.6), 0 0 50px rgba(255, 0, 255, 0.9);
   }
 }
 
 .grid-cell.portal::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
-  background: 
-    repeating-conic-gradient(
-      from 0deg at 50% 50%,
-      rgba(255, 0, 255, 0.3) 0deg,
-      rgba(255, 20, 147, 0.2) 30deg,
-      rgba(139, 0, 139, 0.3) 60deg,
-      rgba(255, 20, 147, 0.2) 90deg,
-      rgba(255, 0, 255, 0.3) 120deg
-    );
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 0, 255, 0.3) 0deg,
+    rgba(255, 20, 147, 0.2) 30deg,
+    rgba(139, 0, 139, 0.3) 60deg,
+    rgba(255, 20, 147, 0.2) 90deg,
+    rgba(255, 0, 255, 0.3) 120deg
+  );
   animation: portalSwirl 3s linear infinite;
   pointer-events: none;
   border-radius: 3px;
@@ -1263,12 +1032,16 @@
 }
 
 @keyframes portalSwirl {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .grid-cell.portal::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1289,34 +1062,38 @@
 }
 
 .brick-type-preview.portal {
-  background: linear-gradient(135deg, #ff00ff 0%, #ff1493 25%, #8b008b 50%, #ff1493 75%, #ff00ff 100%);
+  background: linear-gradient(
+    135deg,
+    #ff00ff 0%,
+    #ff1493 25%,
+    #8b008b 50%,
+    #ff1493 75%,
+    #ff00ff 100%
+  );
   border: 2px solid #ff69b4;
-  box-shadow: 
-    0 0 15px rgba(255, 0, 255, 0.8),
-    inset 0 0 15px rgba(255, 20, 147, 0.4),
-    0 0 30px rgba(255, 0, 255, 0.6);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.8),
+    inset 0 0 15px rgba(255, 20, 147, 0.4), 0 0 30px rgba(255, 0, 255, 0.6);
   position: relative;
   overflow: hidden;
   animation: portalPulse 1.5s ease-in-out infinite;
 }
 
 .brick-type-preview.portal::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
-  background: 
-    repeating-conic-gradient(
-      from 0deg at 50% 50%,
-      rgba(255, 0, 255, 0.3) 0deg,
-      rgba(255, 20, 147, 0.2) 30deg,
-      rgba(139, 0, 139, 0.3) 60deg,
-      rgba(255, 20, 147, 0.2) 90deg,
-      rgba(255, 0, 255, 0.3) 120deg
-    );
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 0, 255, 0.3) 0deg,
+    rgba(255, 20, 147, 0.2) 30deg,
+    rgba(139, 0, 139, 0.3) 60deg,
+    rgba(255, 20, 147, 0.2) 90deg,
+    rgba(255, 0, 255, 0.3) 120deg
+  );
   animation: portalSwirl 3s linear infinite;
   pointer-events: none;
   border-radius: 3px;
@@ -1325,7 +1102,7 @@
 }
 
 .brick-type-preview.portal::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1347,34 +1124,37 @@
 
 /* Chaos Block - Ominous warning block with dangerous indicators */
 .grid-cell.chaos {
-  background: linear-gradient(135deg, #4a2c1a 0%, #3d2415 25%, #2d1a0f 50%, #1f1309 75%, #2d1a0f 100%);
+  background: linear-gradient(
+    135deg,
+    #4a2c1a 0%,
+    #3d2415 25%,
+    #2d1a0f 50%,
+    #1f1309 75%,
+    #2d1a0f 100%
+  );
   border: 2px solid #8b4513;
   border-top: 2px solid rgba(139, 100, 50, 0.6);
   border-left: 2px solid rgba(139, 100, 50, 0.6);
   border-bottom: 2px solid rgba(31, 19, 9, 0.9);
   border-right: 2px solid rgba(31, 19, 9, 0.9);
-  box-shadow: 
-    inset 0 3px 6px rgba(139, 100, 50, 0.2),
+  box-shadow: inset 0 3px 6px rgba(139, 100, 50, 0.2),
     inset 0 -3px 6px rgba(0, 0, 0, 0.6),
     inset 2px 0 4px rgba(139, 100, 50, 0.15),
-    inset -2px 0 4px rgba(0, 0, 0, 0.5),
-    0 2px 4px rgba(0, 0, 0, 0.5),
-    0 0 8px rgba(139, 69, 19, 0.3),
-    0 3px 6px rgba(0, 0, 0, 0.4);
+    inset -2px 0 4px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 8px rgba(139, 69, 19, 0.3), 0 3px 6px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
 }
 
 .grid-cell.chaos::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: 
-    /* Warning stripes */
-    repeating-linear-gradient(
+    /* Warning stripes */ repeating-linear-gradient(
       45deg,
       transparent,
       transparent 8px,
@@ -1382,41 +1162,40 @@
       rgba(255, 200, 50, 0.4) 12px
     ),
     /* Dark base */
-    linear-gradient(135deg, #4a2c1a 0%, #3d2415 50%, #2d1a0f 100%);
+      linear-gradient(135deg, #4a2c1a 0%, #3d2415 50%, #2d1a0f 100%);
   animation: chaosWarningFlicker 2s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes chaosWarningFlicker {
-  0%, 100% { 
+  0%,
+  100% {
     opacity: 1;
     filter: brightness(1);
   }
-  25% { 
+  25% {
     opacity: 0.85;
     filter: brightness(0.9);
   }
-  50% { 
+  50% {
     opacity: 1;
     filter: brightness(1.1);
   }
-  75% { 
+  75% {
     opacity: 0.9;
     filter: brightness(0.95);
   }
 }
 
 .grid-cell.chaos::after {
-  content: '⚠';
+  content: "⚠";
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 18px;
   color: #ffcc44;
-  text-shadow: 
-    0 0 8px rgba(255, 204, 68, 0.8),
-    0 0 16px rgba(255, 204, 68, 0.6),
+  text-shadow: 0 0 8px rgba(255, 204, 68, 0.8), 0 0 16px rgba(255, 204, 68, 0.6),
     0 0 24px rgba(255, 204, 68, 0.4);
   animation: chaosWarningPulse 1.2s ease-in-out infinite;
   pointer-events: none;
@@ -1424,22 +1203,24 @@
   z-index: 2;
 }
 
+/* Fuse brick previews - now use global brick classes from CSS modules */
+/* The .brick class is added to preview buttons, so they inherit all global brick styles */
+
 @keyframes chaosWarningPulse {
-  0%, 100% { 
+  0%,
+  100% {
     opacity: 0.7;
     transform: translate(-50%, -50%) scale(1);
   }
-  50% { 
+  50% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.15);
   }
 }
 
 .grid-cell.chaos:hover {
-  box-shadow: 
-    0 0 30px rgba(255, 0, 255, 1),
-    inset 0 0 30px rgba(255, 20, 147, 0.6),
-    0 0 60px rgba(255, 0, 255, 0.9);
+  box-shadow: 0 0 30px rgba(255, 0, 255, 1),
+    inset 0 0 30px rgba(255, 20, 147, 0.6), 0 0 60px rgba(255, 0, 255, 0.9);
 }
 
 /* Health badge enhancement */
@@ -1454,4 +1235,3 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
-

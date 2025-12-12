@@ -10,6 +10,8 @@ import "./bricks/GoldBrick/GoldBrick.module.css";
 import "./bricks/BoostBrick/BoostBrick.module.css";
 import "./bricks/PortalBrick/PortalBrick.module.css";
 import "./bricks/ChaosBrick/ChaosBrick.module.css";
+// Import centralized fuse background first, then individual fuse modules
+import "./bricks/FuseBackground.module.css";
 import "./bricks/FuseHorizontalBrick/FuseHorizontalBrick.module.css";
 import "./bricks/FuseLeftUpBrick/FuseLeftUpBrick.module.css";
 import "./bricks/FuseRightUpBrick/FuseRightUpBrick.module.css";

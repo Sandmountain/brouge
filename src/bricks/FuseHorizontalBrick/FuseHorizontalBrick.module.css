@@ -1,10 +1,5 @@
 /* Global classes for Phaser - same styles used everywhere */
-:global(.brick.fuse-horizontal) {
-  background: linear-gradient(135deg, #2d5016 0%, #1a3009 100%);
-  border: 2px solid #4a7c2a;
-  position: relative;
-  overflow: visible;
-}
+/* Background styles are inherited from FuseBackground.module.css */
 
 :global(.brick.fuse-horizontal .fuse-link) {
   position: absolute;
@@ -12,8 +7,65 @@
   left: 0;
   right: 0;
   transform: translateY(-50%);
-  height: 3px;
-  background: linear-gradient(to right, #00ff00 0%, #00cc00 50%, #00ff00 100%);
-  box-shadow: 0 0 4px rgba(0, 255, 0, 0.6);
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    #00ff88 0%,
+    #00ff00 15%,
+    #00cc00 30%,
+    #00ff00 45%,
+    #00ff88 60%,
+    #00ff00 75%,
+    #00cc00 90%,
+    #00ff00 100%
+  );
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.8), 0 0 16px rgba(0, 255, 136, 0.4),
+    inset 0 0 4px rgba(255, 255, 255, 0.3), inset 0 0 8px rgba(0, 255, 0, 0.2);
+  animation: fuseGlow 2s ease-in-out infinite;
+  overflow: hidden;
 }
 
+:global(.brick.fuse-horizontal .fuse-link::before) {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 30%,
+    rgba(0, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.6) 70%,
+    transparent 100%
+  );
+  animation: fuseSweepHorizontal 3s ease-in-out infinite;
+}
+
+@keyframes fuseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.8), 0 0 16px rgba(0, 255, 136, 0.4),
+      inset 0 0 4px rgba(255, 255, 255, 0.3), inset 0 0 8px rgba(0, 255, 0, 0.2);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(0, 255, 0, 1), 0 0 24px rgba(0, 255, 136, 0.6),
+      inset 0 0 6px rgba(255, 255, 255, 0.5),
+      inset 0 0 12px rgba(0, 255, 0, 0.4);
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes fuseSweepHorizontal {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}

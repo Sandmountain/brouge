@@ -42,39 +42,9 @@ const BRICK_TYPES: {
   },
   {
     type: "fuse-horizontal",
-    name: "Fuse Horizontal",
+    name: "Fuse",
     color: 0x00ff00,
-    description: "Horizontal fuse line",
-  },
-  {
-    type: "fuse-left-up",
-    name: "Fuse Left-Up",
-    color: 0x00ff00,
-    description: "Horizontal left + vertical up",
-  },
-  {
-    type: "fuse-right-up",
-    name: "Fuse Right-Up",
-    color: 0x00ff00,
-    description: "Horizontal right + vertical up",
-  },
-  {
-    type: "fuse-left-down",
-    name: "Fuse Left-Down",
-    color: 0x00ff00,
-    description: "Horizontal left + vertical down",
-  },
-  {
-    type: "fuse-right-down",
-    name: "Fuse Right-Down",
-    color: 0x00ff00,
-    description: "Horizontal right + vertical down",
-  },
-  {
-    type: "fuse-vertical",
-    name: "Fuse Vertical",
-    color: 0x00ff00,
-    description: "Vertical fuse line",
+    description: "Drag to place fuses - automatically detects direction",
   },
   {
     type: "gold",
@@ -137,20 +107,83 @@ export function LevelEditor({
     }
   };
 
+  // Clean up invalid bricks (e.g., non-portal bricks with portal IDs, invalid positions)
+  // Defined as regular function so it can be used in useState initializer
+  const cleanBricks = (
+    bricks: BrickData[],
+    width: number,
+    height: number
+  ): BrickData[] => {
+    return bricks.filter((brick) => {
+      // Remove bricks with invalid positions
+      if (
+        brick.col === undefined ||
+        brick.row === undefined ||
+        brick.col < 0 ||
+        brick.col >= width ||
+        brick.row < 0 ||
+        brick.row >= height ||
+        isNaN(brick.x) ||
+        isNaN(brick.y)
+      ) {
+        console.warn("[LevelEditor] Removing invalid brick:", brick);
+        return false;
+      }
+
+      // Remove non-portal bricks that have portal IDs (ghost blocks)
+      if (
+        brick.type !== "portal" &&
+        brick.id &&
+        brick.id.startsWith("portal_")
+      ) {
+        console.warn(
+          "[LevelEditor] Removing non-portal brick with portal ID:",
+          brick
+        );
+        return false;
+      }
+
+      // Ensure portal bricks have valid IDs
+      if (brick.type === "portal" && !brick.id) {
+        console.warn("[LevelEditor] Portal brick missing ID, removing:", brick);
+        return false;
+      }
+
+      return true;
+    });
+  };
+
   const [levelData, setLevelData] = useState<LevelData>(() => {
     const stored = loadFromStorage();
-    return (
-      stored || {
-        name: "New Level",
-        width: 10,
-        height: 8,
-        bricks: [],
-        backgroundColor: 0x1a1a2e,
-        brickWidth: 90,
-        brickHeight: 30,
-        padding: 5,
+    const initialData = stored || {
+      name: "New Level",
+      width: 10,
+      height: 8,
+      bricks: [],
+      backgroundColor: 0x1a1a2e,
+      brickWidth: 90,
+      brickHeight: 30,
+      padding: 5,
+    };
+
+    // Clean up any invalid bricks on load
+    if (stored) {
+      const cleanedBricks = cleanBricks(
+        initialData.bricks,
+        initialData.width,
+        initialData.height
+      );
+      if (cleanedBricks.length !== initialData.bricks.length) {
+        console.log(
+          `[LevelEditor] Cleaned ${
+            initialData.bricks.length - cleanedBricks.length
+          } invalid bricks on load`
+        );
+        initialData.bricks = cleanedBricks;
       }
-    );
+    }
+
+    return initialData;
   });
 
   const [selectedBrickType, setSelectedBrickType] =
@@ -158,6 +191,18 @@ export function LevelEditor({
   const [selectedColor, setSelectedColor] = useState<number>(DEFAULT_COLORS[0]);
   const [selectedBrick, setSelectedBrick] = useState<BrickData | null>(null);
   const [brushMode, setBrushMode] = useState<"paint" | "erase">("paint");
+
+  // Drag state for placing bricks (including fuses)
+  const [isFuseMode, setIsFuseMode] = useState(false);
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean;
+    brickType: BrickType;
+    startCol: number;
+    startRow: number;
+    lastCol: number;
+    lastRow: number;
+    path: Array<{ col: number; row: number }>;
+  } | null>(null);
 
   // Listen for return from test mode
   useEffect(() => {
@@ -218,6 +263,22 @@ export function LevelEditor({
 
   // Auto-save to localStorage whenever levelData or brick dimensions change
   useEffect(() => {
+    // Clean bricks before saving to prevent ghost blocks
+    const cleanedBricks = cleanBricks(
+      levelData.bricks,
+      levelData.width,
+      levelData.height
+    );
+
+    // If bricks were cleaned, update state first (this will trigger this effect again, but with clean data)
+    if (cleanedBricks.length !== levelData.bricks.length) {
+      setLevelData((prev) => ({
+        ...prev,
+        bricks: cleanedBricks,
+      }));
+      return; // Exit early, will save on next render with cleaned data
+    }
+
     // Ensure brick dimensions are always saved
     const dataToSave = {
       ...levelData,
@@ -308,8 +369,427 @@ export function LevelEditor({
     []
   );
 
+  // Handle drag end for all brick types
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (dragState?.isDragging) {
+        const { path, brickType } = dragState;
+
+        // Check if this is a fuse type
+        const isFuseType =
+          brickType === "fuse-horizontal" ||
+          brickType === "fuse-vertical" ||
+          brickType === "fuse-left-up" ||
+          brickType === "fuse-right-up" ||
+          brickType === "fuse-left-down" ||
+          brickType === "fuse-right-down";
+
+        if (path.length === 0) {
+          setDragState(null);
+          return;
+        }
+
+        // For fuse types, use complex logic to determine the correct fuse type
+        if (isFuseType) {
+          // Determine fuse types for each cell in the path
+          const fuseBricks: Array<{
+            col: number;
+            row: number;
+            type: BrickType;
+          }> = [];
+
+          for (let i = 0; i < path.length; i++) {
+            const current = path[i];
+            const prev = i > 0 ? path[i - 1] : null;
+            const next = i < path.length - 1 ? path[i + 1] : null;
+
+            if (!prev && !next) {
+              // Single cell - use horizontal as default
+              fuseBricks.push({ ...current, type: "fuse-horizontal" });
+              continue;
+            }
+
+            // Determine direction changes
+            const hasPrev = prev !== null;
+            const hasNext = next !== null;
+
+            let colChange = 0;
+            let rowChange = 0;
+
+            if (hasPrev) {
+              colChange = current.col - prev.col;
+              rowChange = current.row - prev.row;
+            }
+
+            let nextColChange = 0;
+            let nextRowChange = 0;
+
+            if (hasNext) {
+              nextColChange = next.col - current.col;
+              nextRowChange = next.row - current.row;
+            }
+
+            // Determine fuse type based on direction changes
+            let fuseType: BrickType;
+
+            if (hasPrev && hasNext) {
+              // Middle segment - check for direction change
+              const prevIsHorizontal = colChange !== 0 && rowChange === 0;
+              const nextIsHorizontal =
+                nextColChange !== 0 && nextRowChange === 0;
+              const prevIsVertical = colChange === 0 && rowChange !== 0;
+              const nextIsVertical = nextColChange === 0 && nextRowChange !== 0;
+
+              if (prevIsHorizontal && nextIsVertical) {
+                // Horizontal to vertical - corner fuse
+                // colChange > 0 means we came from left, colChange < 0 means we came from right
+                // nextRowChange < 0 means going up, nextRowChange > 0 means going down
+                if (colChange > 0 && nextRowChange < 0) {
+                  // Came from left, going up -> fuse-left-up
+                  fuseType = "fuse-left-up";
+                } else if (colChange > 0 && nextRowChange > 0) {
+                  // Came from left, going down -> fuse-left-down
+                  fuseType = "fuse-left-down";
+                } else if (colChange < 0 && nextRowChange < 0) {
+                  // Came from right, going up -> fuse-right-up
+                  fuseType = "fuse-right-up";
+                } else {
+                  // Came from right, going down -> fuse-right-down
+                  fuseType = "fuse-right-down";
+                }
+              } else if (prevIsVertical && nextIsHorizontal) {
+                // Vertical to horizontal - corner fuse
+                // rowChange < 0 means current.row < prev.row (moved up, came from below)
+                // rowChange > 0 means current.row > prev.row (moved down, came from above)
+                // nextColChange > 0 means going right, nextColChange < 0 means going left
+                if (rowChange < 0 && nextColChange > 0) {
+                  // Came from below, going right -> need connection down and right -> fuse-right-down
+                  fuseType = "fuse-right-down";
+                } else if (rowChange < 0 && nextColChange < 0) {
+                  // Came from below, going left -> need connection down and left -> fuse-left-down
+                  fuseType = "fuse-left-down";
+                } else if (rowChange > 0 && nextColChange > 0) {
+                  // Came from above, going right -> need connection up and right -> fuse-right-up
+                  fuseType = "fuse-right-up";
+                } else {
+                  // Came from above, going left -> need connection up and left -> fuse-left-up
+                  fuseType = "fuse-left-up";
+                }
+              } else if (prevIsHorizontal && nextIsHorizontal) {
+                fuseType = "fuse-horizontal";
+              } else if (prevIsVertical && nextIsVertical) {
+                fuseType = "fuse-vertical";
+              } else {
+                // Default to horizontal
+                fuseType = "fuse-horizontal";
+              }
+            } else if (hasPrev) {
+              // Last segment
+              if (colChange !== 0 && rowChange === 0) {
+                fuseType = "fuse-horizontal";
+              } else if (colChange === 0 && rowChange !== 0) {
+                fuseType = "fuse-vertical";
+              } else {
+                fuseType = "fuse-horizontal";
+              }
+            } else if (hasNext) {
+              // First segment
+              if (nextColChange !== 0 && nextRowChange === 0) {
+                fuseType = "fuse-horizontal";
+              } else if (nextColChange === 0 && nextRowChange !== 0) {
+                fuseType = "fuse-vertical";
+              } else {
+                fuseType = "fuse-horizontal";
+              }
+            } else {
+              fuseType = "fuse-horizontal";
+            }
+
+            fuseBricks.push({ ...current, type: fuseType });
+          }
+
+          // Place all fuse bricks
+          const refWidth = levelData.brickWidth || brickWidth;
+          const refHeight = levelData.brickHeight || brickHeight;
+          const refPadding = levelData.padding || padding;
+
+          const newBricks: BrickData[] = fuseBricks.map(
+            ({ col, row, type }) => {
+              const { x, y } = calculatePositionFromGrid(
+                col,
+                row,
+                refWidth,
+                refHeight,
+                refPadding
+              );
+
+              return {
+                x,
+                y,
+                col,
+                row,
+                health: 1,
+                maxHealth: 1,
+                color: 0x00ff00,
+                dropChance: 0.15,
+                coinValue: (row + 1) * 2,
+                type,
+              };
+            }
+          );
+
+          setLevelData((prev) => ({
+            ...prev,
+            // Remove existing bricks at these positions (including non-fuse bricks)
+            bricks: [
+              ...prev.bricks.filter(
+                (b) =>
+                  !fuseBricks.some((fb) => fb.col === b.col && fb.row === b.row)
+              ),
+              ...newBricks,
+            ],
+            brickWidth: prev.brickWidth || brickWidth,
+            brickHeight: prev.brickHeight || brickHeight,
+            padding: prev.padding || padding,
+          }));
+
+          setDragState(null);
+          return;
+        }
+
+        // For regular bricks, just place them at each cell in the path
+        if (!isFuseType) {
+          const refWidth = levelData.brickWidth || brickWidth;
+          const refHeight = levelData.brickHeight || brickHeight;
+          const refPadding = levelData.padding || padding;
+
+          // Filter out positions that are outside the grid bounds
+          const validPath = path.filter(
+            ({ col, row }) =>
+              col >= 0 &&
+              col < levelData.width &&
+              row >= 0 &&
+              row < levelData.height
+          );
+
+          // Remove duplicates from path (same col/row)
+          const uniquePath = validPath.filter(
+            (point, index, self) =>
+              index ===
+              self.findIndex((p) => p.col === point.col && p.row === point.row)
+          );
+
+          // Handle portal pairing logic ONCE for the entire drag operation
+          // Count how many portals are being placed in this drag
+          const portalsInPath = brickType === "portal" ? uniquePath.length : 0;
+          let portalPairIds: (string | undefined)[] = [];
+
+          if (brickType === "portal" && portalsInPath > 0) {
+            // Count existing portals in levelData
+            const portalIdCounts = new Map<string, number>();
+            levelData.bricks
+              .filter((b) => b.type === "portal" && b.id)
+              .forEach((b) => {
+                const count = portalIdCounts.get(b.id!) || 0;
+                portalIdCounts.set(b.id!, count + 1);
+              });
+
+            // Find unpaired portals
+            const unpairedPortalIds: string[] = [];
+            for (const [id, count] of portalIdCounts.entries()) {
+              if (count === 1) {
+                unpairedPortalIds.push(id);
+              }
+            }
+
+            // Assign portal IDs: pair new portals together, or link to existing unpaired ones
+            for (let i = 0; i < portalsInPath; i++) {
+              if (i < unpairedPortalIds.length) {
+                // Link to existing unpaired portal
+                portalPairIds.push(unpairedPortalIds[i]);
+              } else {
+                // Create new pair - portals in pairs get the same ID
+                const isFirstInPair = (i - unpairedPortalIds.length) % 2 === 0;
+                if (isFirstInPair) {
+                  // First portal in new pair - create new ID
+                  const newPairId = `portal_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`;
+                  portalPairIds.push(newPairId);
+                } else {
+                  // Second portal in pair - use the ID from the previous portal
+                  portalPairIds.push(portalPairIds[portalPairIds.length - 1]);
+                }
+              }
+            }
+          }
+
+          // Validate that portalPairIds array matches uniquePath length for portals
+          if (
+            brickType === "portal" &&
+            portalPairIds.length !== uniquePath.length
+          ) {
+            console.error("[LevelEditor] Portal ID count mismatch:", {
+              uniquePathLength: uniquePath.length,
+              portalPairIdsLength: portalPairIds.length,
+            });
+            // Fix the mismatch by extending or truncating
+            while (portalPairIds.length < uniquePath.length) {
+              const isFirstInPair = portalPairIds.length % 2 === 0;
+              if (isFirstInPair) {
+                const newPairId = `portal_${Date.now()}_${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`;
+                portalPairIds.push(newPairId);
+              } else {
+                portalPairIds.push(portalPairIds[portalPairIds.length - 1]);
+              }
+            }
+            portalPairIds = portalPairIds.slice(0, uniquePath.length);
+          }
+
+          const newBricks: BrickData[] = uniquePath
+            .map(({ col, row }, index) => {
+              // Double-check bounds
+              if (
+                col < 0 ||
+                col >= levelData.width ||
+                row < 0 ||
+                row >= levelData.height
+              ) {
+                return null;
+              }
+
+              const { x, y } = calculatePositionFromGrid(
+                col,
+                row,
+                refWidth,
+                refHeight,
+                refPadding
+              );
+
+              // Ensure all required fields are valid
+              if (
+                isNaN(x) ||
+                isNaN(y) ||
+                isNaN(col) ||
+                isNaN(row) ||
+                col === undefined ||
+                row === undefined
+              ) {
+                console.error("[LevelEditor] Invalid brick data:", {
+                  col,
+                  row,
+                  x,
+                  y,
+                  brickType,
+                });
+                return null;
+              }
+
+              const brick: BrickData = {
+                x,
+                y,
+                col,
+                row,
+                health:
+                  brickType === "default"
+                    ? 1
+                    : brickType === "metal"
+                    ? 5
+                    : brickType === "gold"
+                    ? 3
+                    : brickType === "boost"
+                    ? 1
+                    : brickType === "portal"
+                    ? 1
+                    : brickType === "unbreakable"
+                    ? 999
+                    : 1,
+                maxHealth:
+                  brickType === "default"
+                    ? 1
+                    : brickType === "metal"
+                    ? 5
+                    : brickType === "gold"
+                    ? 3
+                    : brickType === "boost"
+                    ? 1
+                    : brickType === "portal"
+                    ? 1
+                    : brickType === "unbreakable"
+                    ? 999
+                    : 1,
+                color:
+                  brickType === "default"
+                    ? selectedColor
+                    : BRICK_TYPES.find((t) => t.type === brickType)?.color ||
+                      selectedColor,
+                dropChance: 0.15,
+                coinValue: brickType === "gold" ? 10 : (row + 1) * 2,
+                type: brickType,
+                // Only assign portal IDs to portal bricks
+                id:
+                  brickType === "portal" && portalPairIds[index]
+                    ? portalPairIds[index]
+                    : undefined,
+              };
+
+              return brick;
+            })
+            .filter((b): b is BrickData => b !== null);
+
+          setLevelData((prev) => {
+            // Create a set of positions being replaced for efficient lookup
+            const positionsToReplace = new Set(
+              uniquePath.map((p) => `${p.col},${p.row}`)
+            );
+
+            return {
+              ...prev,
+              bricks: [
+                // Remove bricks at positions being replaced
+                ...prev.bricks.filter(
+                  (b) =>
+                    b.col !== undefined &&
+                    b.row !== undefined &&
+                    !positionsToReplace.has(`${b.col},${b.row}`)
+                ),
+                // Add new bricks (already validated)
+                ...newBricks,
+              ],
+              brickWidth: prev.brickWidth || brickWidth,
+              brickHeight: prev.brickHeight || brickHeight,
+              padding: prev.padding || padding,
+            };
+          });
+
+          setDragState(null);
+        }
+      }
+    };
+
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [
+    dragState,
+    levelData,
+    brickWidth,
+    brickHeight,
+    padding,
+    calculatePositionFromGrid,
+    selectedColor,
+  ]);
+
   const handleCellClick = useCallback(
     (col: number, row: number) => {
+      // Don't handle clicks in fuse mode - fuse mode uses drag
+      if (isFuseMode) {
+        return;
+      }
+
       if (brushMode === "erase") {
         handleEraseBrick(col, row);
         return;
@@ -404,10 +884,7 @@ export function LevelEditor({
         dropChance: 0.15,
         coinValue: selectedBrickType === "gold" ? 10 : (row + 1) * 2,
         type: selectedBrickType,
-        id:
-          selectedBrickType === "portal"
-            ? portalPairId
-            : undefined,
+        id: selectedBrickType === "portal" ? portalPairId : undefined,
       };
 
       console.log("[LevelEditor] Creating brick:", {
@@ -443,6 +920,7 @@ export function LevelEditor({
       levelData.brickHeight,
       levelData.padding,
       levelData.bricks,
+      isFuseMode,
     ]
   );
 
@@ -605,21 +1083,32 @@ export function LevelEditor({
               {BRICK_TYPES.map((type) => (
                 <button
                   key={type.type}
-                  className={`brick-type-preview ${type.type} ${
-                    selectedBrickType === type.type ? "active" : ""
+                  className={`brick-type-preview brick ${type.type} ${
+                    type.type === "fuse-horizontal"
+                      ? isFuseMode
+                        ? "active"
+                        : ""
+                      : selectedBrickType === type.type
+                      ? "active"
+                      : ""
                   }`}
-                  onClick={() => setSelectedBrickType(type.type)}
+                  onClick={() => {
+                    if (type.type === "fuse-horizontal") {
+                      setIsFuseMode(!isFuseMode);
+                      if (!isFuseMode) {
+                        setSelectedBrickType("default");
+                      }
+                    } else {
+                      setSelectedBrickType(type.type);
+                      setIsFuseMode(false);
+                    }
+                  }}
                   title={`${type.name}: ${type.description}`}
                 >
                   <div className="brick-preview-content">
                     {type.type === "tnt" && <div className="tnt-fuse"></div>}
-                    {(type.type === "fuse-horizontal" ||
-                      type.type === "fuse-left-up" ||
-                      type.type === "fuse-right-up" ||
-                      type.type === "fuse-left-down" ||
-                      type.type === "fuse-right-down" ||
-                      type.type === "fuse-vertical") && (
-                      <div className={`fuse-link fuse-link-${type.type.replace("fuse-", "")}`}></div>
+                    {type.type === "fuse-horizontal" && (
+                      <div className="fuse-link"></div>
                     )}
                     {type.type === "gold" && <div className="gold-shine"></div>}
                     {type.type === "boost" && (
@@ -641,6 +1130,15 @@ export function LevelEditor({
               ))}
             </div>
           </div>
+
+          {isFuseMode && (
+            <div className="sidebar-section">
+              <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
+                Click and drag to place fuses. The system will automatically
+                choose the correct fuse type based on your drag direction.
+              </p>
+            </div>
+          )}
 
           {selectedBrickType === "default" && (
             <div className="sidebar-section">
@@ -822,15 +1320,17 @@ export function LevelEditor({
               </div>
               <div>
                 Fuse:{" "}
-                {levelData.bricks.filter(
-                  (b) =>
-                    b.type === "fuse-horizontal" ||
-                    b.type === "fuse-left-up" ||
-                    b.type === "fuse-right-up" ||
-                    b.type === "fuse-left-down" ||
-                    b.type === "fuse-right-down" ||
-                    b.type === "fuse-vertical"
-                ).length}
+                {
+                  levelData.bricks.filter(
+                    (b) =>
+                      b.type === "fuse-horizontal" ||
+                      b.type === "fuse-left-up" ||
+                      b.type === "fuse-right-up" ||
+                      b.type === "fuse-left-down" ||
+                      b.type === "fuse-right-down" ||
+                      b.type === "fuse-vertical"
+                  ).length
+                }
               </div>
             </div>
           </div>
@@ -853,20 +1353,106 @@ export function LevelEditor({
               {Array.from({ length: levelData.height }).map((_, row) =>
                 Array.from({ length: levelData.width }).map((_, col) => {
                   const brick = getBrickAtPosition(col, row);
+                  const isInDragPath =
+                    dragState?.path.some(
+                      (p: { col: number; row: number }) =>
+                        p.col === col && p.row === row
+                    ) || false;
 
                   return (
                     <div
                       key={`${col}-${row}`}
                       className={`grid-cell ${brick ? "has-brick" : ""} ${
                         brick?.type || ""
-                      }`}
+                      } ${isInDragPath ? "drag-path-preview" : ""}`}
                       style={{
                         backgroundColor: brick
                           ? `#${brick.color.toString(16).padStart(6, "0")}`
+                          : isInDragPath
+                          ? dragState?.brickType === "fuse-horizontal" ||
+                            dragState?.brickType === "fuse-vertical" ||
+                            dragState?.brickType === "fuse-left-up" ||
+                            dragState?.brickType === "fuse-right-up" ||
+                            dragState?.brickType === "fuse-left-down" ||
+                            dragState?.brickType === "fuse-right-down"
+                            ? "rgba(0, 255, 0, 0.2)"
+                            : "rgba(255, 255, 255, 0.1)"
                           : "transparent",
-                        border: brick ? "2px solid #fff" : "1px solid #333",
+                        border: brick
+                          ? "2px solid #fff"
+                          : isInDragPath
+                          ? dragState?.brickType === "fuse-horizontal" ||
+                            dragState?.brickType === "fuse-vertical" ||
+                            dragState?.brickType === "fuse-left-up" ||
+                            dragState?.brickType === "fuse-right-up" ||
+                            dragState?.brickType === "fuse-left-down" ||
+                            dragState?.brickType === "fuse-right-down"
+                            ? "2px solid #00ff00"
+                            : "2px solid #fff"
+                          : "1px solid #333",
                       }}
-                      onClick={() => handleCellClick(col, row)}
+                      onClick={() => {
+                        if (!dragState?.isDragging) {
+                          handleCellClick(col, row);
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        if (
+                          brushMode === "paint" &&
+                          selectedBrickType !== "boost" &&
+                          selectedBrickType !== "portal" &&
+                          !brick
+                        ) {
+                          e.preventDefault();
+                          const brickTypeToPlace = isFuseMode
+                            ? "fuse-horizontal"
+                            : selectedBrickType;
+                          setDragState({
+                            isDragging: true,
+                            brickType: brickTypeToPlace,
+                            startCol: col,
+                            startRow: row,
+                            lastCol: col,
+                            lastRow: row,
+                            path: [{ col, row }],
+                          });
+                        }
+                      }}
+                      onMouseEnter={() => {
+                        if (
+                          dragState?.isDragging &&
+                          brushMode === "paint" &&
+                          selectedBrickType !== "boost" &&
+                          selectedBrickType !== "portal" &&
+                          // Only add if within grid bounds
+                          col >= 0 &&
+                          col < levelData.width &&
+                          row >= 0 &&
+                          row < levelData.height
+                        ) {
+                          setDragState((prev) => {
+                            if (!prev) return null;
+                            const newPath = [...prev.path];
+                            const lastPoint = newPath[newPath.length - 1];
+                            // Only add if it's a different position and not already in path
+                            if (
+                              (lastPoint.col !== col ||
+                                lastPoint.row !== row) &&
+                              !newPath.some(
+                                (p) => p.col === col && p.row === row
+                              )
+                            ) {
+                              newPath.push({ col, row });
+                            }
+                            return {
+                              ...prev,
+                              lastCol: col,
+                              lastRow: row,
+                              path: newPath,
+                            };
+                          });
+                        }
+                      }}
                       onContextMenu={(e) => handleCellRightClick(e, col, row)}
                       title={
                         brick

@@ -6,7 +6,13 @@ import { LevelData } from "./game/types";
 import { EventBus } from "./game/EventBus";
 
 function App() {
-  const [showEditor, setShowEditor] = useState(false);
+  // Persist editor state across hot reloads
+  const [showEditor, setShowEditor] = useState(() => {
+    // Check localStorage on initial mount
+    const saved = localStorage.getItem("showEditor");
+    return saved === "true";
+  });
+
   const [testLevelData, setTestLevelData] = useState<LevelData | null>(null);
   // The sprite can only be moved in the MainMenu Scene
   const [canMoveSprite, setCanMoveSprite] = useState(true);
@@ -14,6 +20,15 @@ function App() {
   //  References to the PhaserGame component (game and scene are exposed)
   const phaserRef = useRef<IRefPhaserGame | null>(null);
   const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
+
+  // Persist editor state to localStorage whenever it changes
+  useEffect(() => {
+    if (showEditor) {
+      localStorage.setItem("showEditor", "true");
+    } else {
+      localStorage.removeItem("showEditor");
+    }
+  }, [showEditor]);
 
   const changeScene = () => {
     if (phaserRef.current) {
