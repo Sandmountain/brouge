@@ -16,6 +16,8 @@ export function createBrickDOM(
   element.className = `${BRICK_CLASSES.brick} ${BRICK_CLASSES.gameMode} ${BRICK_CLASSES.hasBrick} ${brickData.type}`;
   
   // Set explicit size
+  // Note: brickWidth is already the correct size (accounting for gap if half-size)
+  // So we use it directly without further division
   element.style.width = `${brickWidth}px`;
   element.style.height = `${brickHeight}px`;
   element.style.boxSizing = 'border-box';

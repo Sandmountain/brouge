@@ -289,8 +289,8 @@
   /* Use calculated cell size from JavaScript */
   width: var(--cell-width, 90px);
   height: var(--cell-height, 30px);
-  border: 1px solid #333;
-  border-radius: 3px;
+  border: 2px solid #333;
+  border-radius: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -298,6 +298,7 @@
   transition: all 0.2s;
   position: relative;
   font-size: clamp(6px, calc(var(--cell-width, 90px) / 15), 14px);
+  box-sizing: border-box;
 }
 
 .grid-cell:hover {
@@ -306,7 +307,8 @@
 }
 
 .grid-cell.has-brick {
-  border: 2px solid #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  /* Border width stays the same, so no size change */
 }
 
 .brick-indicator {
@@ -958,16 +960,20 @@
   border-radius: 2px;
 }
 
-/* Default blocks - Enhanced with depth */
+/* Default blocks - Hard beveled cartoonish look */
 .grid-cell.default.has-brick {
-  border-top: 2px solid rgba(255, 255, 255, 0.5);
-  border-left: 2px solid rgba(255, 255, 255, 0.5);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  box-shadow: inset 0 3px 6px rgba(255, 255, 255, 0.3),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.4),
-    inset 2px 0 4px rgba(255, 255, 255, 0.2),
-    inset -2px 0 4px rgba(0, 0, 0, 0.3), 0 3px 6px rgba(0, 0, 0, 0.4);
+  border-radius: 0;
+  border: none;
+  /* Top and left edges - bright highlight */
+  border-top: 3px solid rgba(255, 255, 255, 0.7);
+  border-left: 3px solid rgba(255, 255, 255, 0.7);
+  /* Bottom and right edges - dark shadow */
+  border-bottom: 3px solid rgba(0, 0, 0, 0.6);
+  border-right: 3px solid rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 4px 8px rgba(0, 0, 0, 0.25),
+    inset 4px 0 8px rgba(255, 255, 255, 0.35),
+    inset -4px 0 8px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .grid-cell.default.has-brick:hover {

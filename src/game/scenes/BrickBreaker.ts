@@ -1082,9 +1082,31 @@ export class BrickBreaker extends Scene {
           }
         }
         
-        // Always recalculate position from grid coordinates using stored dimensions
-        const gridX = col * (brickWidth + padding) + brickWidth / 2;
-        const gridY = row * (brickHeight + padding) + brickHeight / 2;
+        // Recalculate position from grid coordinates using stored dimensions
+        // For half-size blocks, adjust x position based on alignment
+        let gridX: number;
+        let gridY: number;
+        
+        if (brickData.isHalfSize && brickData.halfSizeAlign) {
+          // For half-size blocks, calculate position with gap matching grid padding
+          // Gap between half blocks should match the spacing between grid cells
+          const halfBlockGap = padding; // Use grid padding to match spacing between cells
+          const halfWidth = (brickWidth - halfBlockGap) / 2;
+          const cellLeft = col * (brickWidth + padding);
+          const cellCenter = cellLeft + brickWidth / 2;
+          
+          if (brickData.halfSizeAlign === 'left') {
+            gridX = cellLeft + halfWidth / 2; // Center of left half block
+          } else {
+            gridX = cellCenter + halfBlockGap / 2 + halfWidth / 2; // Center of right half block
+          }
+          gridY = row * (brickHeight + padding) + brickHeight / 2;
+        } else {
+          // Full-size blocks - center of cell
+          gridX = col * (brickWidth + padding) + brickWidth / 2;
+          gridY = row * (brickHeight + padding) + brickHeight / 2;
+        }
+        
         const finalX = gridX + offsetX;
         const finalY = gridY + offsetY;
         
@@ -1093,7 +1115,9 @@ export class BrickBreaker extends Scene {
             grid: { col, row },
             calculated: { x: gridX, y: gridY },
             adjusted: { x: finalX, y: finalY },
-            dimensions: { brickWidth, brickHeight, padding }
+            dimensions: { brickWidth, brickHeight, padding },
+            isHalfSize: brickData.isHalfSize,
+            halfSizeAlign: brickData.halfSizeAlign
           });
         }
         
@@ -1105,9 +1129,19 @@ export class BrickBreaker extends Scene {
           row: row
         };
         
-        const brick = this.createBrickFromData(adjustedBrickData, brickWidth, brickHeight);
+        // Calculate actual width - for half-size blocks, use (brickWidth - padding) / 2
+        // For full-size blocks, use full brickWidth
+        // Gap between half blocks should match the spacing between grid cells
+        const actualBrickWidth = adjustedBrickData.isHalfSize 
+          ? (brickWidth - padding) / 2 
+          : brickWidth;
+        const brick = this.createBrickFromData(adjustedBrickData, actualBrickWidth, brickHeight);
         if (brick && brick.brickData) {
           this.bricks.add(brick);
+          // Set physics body size to match actual brick width
+          if (brick.body) {
+            (brick.body as Phaser.Physics.Arcade.Body).setSize(actualBrickWidth, brickHeight);
+          }
           // Boost and portal blocks are optional (don't count towards breakable bricks)
           if (brick.brickData.type !== 'unbreakable' && brick.brickData.type !== 'boost' && brick.brickData.type !== 'portal') {
             this.breakableBrickCount++;
@@ -1201,6 +1235,8 @@ export class BrickBreaker extends Scene {
     brickHeight: number
   ): (Phaser.GameObjects.DOMElement & { brickData?: BrickData }) | null {
     // Use the centralized brick DOM creation utility
+    // Note: brickWidth parameter is already the correct size (half width for half-size blocks)
+    // So we use it directly without further calculation
     const element = createBrickDOM(brickData, brickWidth, brickHeight);
     
     // Debug log for TNT blocks
@@ -1211,7 +1247,8 @@ export class BrickBreaker extends Scene {
         col: brickData.col,
         row: brickData.row,
         brickWidth,
-        brickHeight
+        brickHeight,
+        isHalfSize: brickData.isHalfSize
       });
     }
     
@@ -1228,7 +1265,7 @@ export class BrickBreaker extends Scene {
     };
     physicsBrick.brickData = brickData;
     
-    // Set size for physics
+    // Set size for physics - use actual width (half if isHalfSize)
     (physicsBrick.body as Phaser.Physics.Arcade.Body).setSize(brickWidth, brickHeight);
     
     // Debug: Verify position for TNT blocks

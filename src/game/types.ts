@@ -27,6 +27,8 @@ export interface BrickData {
   coinValue: number;
   type: BrickType;
   id?: string; // For fuse bricks to identify connections
+  isHalfSize?: boolean; // If true, brick takes up half the width of a grid cell
+  halfSizeAlign?: 'left' | 'right'; // Alignment for half-size blocks (default: 'left')
 }
 
 export interface LevelData {

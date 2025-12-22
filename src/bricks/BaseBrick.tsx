@@ -23,6 +23,8 @@ export function BaseBrick({
 }: BaseBrickProps) {
   const colorHex = `#${brickData.color.toString(16).padStart(6, "0")}`;
 
+  // Width is already calculated correctly when passed in
+  // For half-size blocks, the width prop is already the correct half width
   const style: React.CSSProperties = {
     width: width ? `${width}px` : undefined,
     height: height ? `${height}px` : undefined,

@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { IRefPhaserGame, PhaserGame } from "./PhaserGame";
 import { MainMenu } from "./game/scenes/MainMenu";
-import { LevelEditor } from "./components/LevelEditor";
+import { LevelEditor } from "./components/LevelEditor/index";
 import { LevelData } from "./game/types";
 import { EventBus } from "./game/EventBus";
 
