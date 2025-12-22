@@ -1,19 +1,37 @@
-import { BrickData } from "../../../game/types";
+import { BrickData, LevelData } from "../../../game/types";
 
 interface BrickEditorProps {
   selectedBrick: BrickData;
   onUpdate: (brick: BrickData, updates: Partial<BrickData>) => void;
   onClose: () => void;
+  levelData: LevelData;
 }
 
 export function BrickEditor({
   selectedBrick,
   onUpdate,
   onClose,
+  levelData,
 }: BrickEditorProps) {
+  // Find connected portal for portal bricks
+  let connectedPortal: BrickData | null = null;
+  if (selectedBrick.type === "portal" && selectedBrick.id) {
+    connectedPortal = levelData.bricks.find(
+      (b) =>
+        b.type === "portal" &&
+        b.id === selectedBrick.id &&
+        (b.col !== selectedBrick.col || b.row !== selectedBrick.row)
+    ) || null;
+  }
+
   return (
-    <div className="sidebar-section">
-      <h3>Edit Brick</h3>
+    <div className="brick-editor-panel">
+      <div className="brick-editor-header">
+        <h3>Edit Brick</h3>
+        <button className="brick-editor-close" onClick={onClose}>
+          <span className="material-icons">close</span>
+        </button>
+      </div>
       <div className="brick-properties">
         <label>Type: {selectedBrick.type}</label>
         {selectedBrick.type === "default" && (
@@ -28,6 +46,32 @@ export function BrickEditor({
               }}
             />
           </label>
+        )}
+        {selectedBrick.type === "portal" && (
+          <>
+            {connectedPortal ? (
+              <label>
+                Connected to: ({connectedPortal.col}, {connectedPortal.row})
+                {connectedPortal.isHalfSize && (
+                  <span> - {connectedPortal.halfSizeAlign} half</span>
+                )}
+              </label>
+            ) : (
+              <label style={{ color: "#ff6b6b" }}>
+                No connection (portal needs a pair)
+              </label>
+            )}
+            <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="checkbox"
+                checked={selectedBrick.isOneWay || false}
+                onChange={(e) =>
+                  onUpdate(selectedBrick, { isOneWay: e.target.checked })
+                }
+              />
+              <span>One-way (receive only)</span>
+            </label>
+          </>
         )}
         <label>
           Drop Chance:
@@ -57,9 +101,6 @@ export function BrickEditor({
             }
           />
         </label>
-        <button onClick={onClose} className="btn btn-secondary">
-          Close
-        </button>
       </div>
     </div>
   );

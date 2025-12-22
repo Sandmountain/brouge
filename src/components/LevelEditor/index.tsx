@@ -12,12 +12,10 @@ import { saveToStorage } from "./utils/storage";
 import { EditorHeader } from "./components/EditorHeader";
 import { BrickSelector } from "./components/BrickSelector";
 import { ColorPicker } from "./components/ColorPicker";
-import { ToolsPanel } from "./components/ToolsPanel";
 import { BrickEditor } from "./components/BrickEditor";
-import { GridSizeControls } from "./components/GridSizeControls";
-import { LevelStats } from "./components/LevelStats";
 import { EditorGrid } from "./components/EditorGrid";
-import { SizeToggle } from "./components/SizeToggle";
+import { EditorToolbar } from "./components/EditorToolbar";
+import { SettingsModal } from "./components/SettingsModal";
 
 interface LevelEditorProps {
   onTestLevel?: (levelData: LevelData) => void;
@@ -44,6 +42,7 @@ export function LevelEditor({
   const [brushMode, setBrushMode] = useState<"paint" | "erase">("paint");
   const [isFuseMode, setIsFuseMode] = useState(false);
   const [isHalfSize, setIsHalfSize] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Calculate available space (accounting for sidebar ~300px and padding)
   const availableWidth = windowSize.width - 400;
@@ -522,6 +521,14 @@ export function LevelEditor({
 
       <div className="editor-content">
         <div className="editor-sidebar">
+          <EditorToolbar
+            brushMode={brushMode}
+            onBrushModeChange={setBrushMode}
+            isHalfSize={isHalfSize}
+            onHalfSizeToggle={setIsHalfSize}
+            onSettingsClick={() => setIsSettingsOpen(true)}
+          />
+
           <BrickSelector
             selectedBrickType={selectedBrickType}
             selectedColor={selectedColor}
@@ -547,58 +554,26 @@ export function LevelEditor({
             </div>
           )}
 
-          {selectedBrickType === "default" && (
+          {selectedBrickType === "default" && !isFuseMode && (
             <ColorPicker
               selectedColor={selectedColor}
               onColorSelect={setSelectedColor}
+              levelData={levelData}
             />
           )}
 
-          <ToolsPanel brushMode={brushMode} onBrushModeChange={setBrushMode} />
+        </div>
 
-          <SizeToggle isHalfSize={isHalfSize} onToggle={setIsHalfSize} />
-
+        <div className="editor-main-area" style={{ position: "relative" }}>
           {selectedBrick && (
             <BrickEditor
               selectedBrick={selectedBrick}
               onUpdate={updateBrick}
               onClose={() => setSelectedBrick(null)}
+              levelData={levelData}
             />
           )}
-
-          <GridSizeControls
-            levelData={levelData}
-            brickWidth={brickWidth}
-            brickHeight={brickHeight}
-            padding={padding}
-            onWidthChange={(newWidth) => {
-              setLevelData((prev) => {
-                const maxX =
-                  (newWidth - 1) * (brickWidth + padding) + brickWidth / 2;
-                return {
-                  ...prev,
-                  width: newWidth,
-                  bricks: prev.bricks.filter((b) => b.x <= maxX),
-                };
-              });
-            }}
-            onHeightChange={(newHeight) => {
-              setLevelData((prev) => {
-                const maxY =
-                  (newHeight - 1) * (brickHeight + padding) + brickHeight / 2;
-                return {
-                  ...prev,
-                  height: newHeight,
-                  bricks: prev.bricks.filter((b) => b.y <= maxY),
-                };
-              });
-            }}
-          />
-
-          <LevelStats levelData={levelData} />
-        </div>
-
-        <EditorGrid
+          <EditorGrid
           levelData={levelData}
           brickWidth={brickWidth}
           brickHeight={brickHeight}
@@ -611,7 +586,39 @@ export function LevelEditor({
           onCellMouseEnter={handleCellMouseEnter}
           onCellRightClick={handleCellRightClick}
         />
+        </div>
       </div>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        levelData={levelData}
+        brickWidth={brickWidth}
+        brickHeight={brickHeight}
+        padding={padding}
+        onWidthChange={(newWidth) => {
+          setLevelData((prev) => {
+            const maxX =
+              (newWidth - 1) * (brickWidth + padding) + brickWidth / 2;
+            return {
+              ...prev,
+              width: newWidth,
+              bricks: prev.bricks.filter((b) => b.x <= maxX),
+            };
+          });
+        }}
+        onHeightChange={(newHeight) => {
+          setLevelData((prev) => {
+            const maxY =
+              (newHeight - 1) * (brickHeight + padding) + brickHeight / 2;
+            return {
+              ...prev,
+              height: newHeight,
+              bricks: prev.bricks.filter((b) => b.y <= maxY),
+            };
+          });
+        }}
+      />
     </div>
   );
 }

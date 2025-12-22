@@ -16,6 +16,7 @@ export const BRICK_CLASSES = {
   gold: 'gold',
   boost: 'boost',
   portal: 'portal',
+  portalOneWay: 'portal-one-way',
   chaos: 'chaos',
   fuseHorizontal: 'fuse-horizontal',
   fuseLeftUp: 'fuse-left-up',

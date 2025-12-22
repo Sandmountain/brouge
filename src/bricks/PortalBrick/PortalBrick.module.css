@@ -76,3 +76,36 @@
   pointer-events: none;
 }
 
+/* One-way portal: grayscale filter to remove color but keep animation */
+:global(.brick.portal.portal-one-way) {
+  filter: grayscale(100%);
+  background: linear-gradient(135deg, #808080 0%, #606060 25%, #404040 50%, #606060 75%, #808080 100%);
+  border: 2px solid #999999;
+  box-shadow: 
+    0 0 15px rgba(128, 128, 128, 0.8),
+    inset 0 0 15px rgba(96, 96, 96, 0.4),
+    0 0 30px rgba(128, 128, 128, 0.6);
+}
+
+:global(.brick.portal.portal-one-way::before) {
+  background: 
+    repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(128, 128, 128, 0.3) 0deg,
+      rgba(96, 96, 96, 0.2) 30deg,
+      rgba(64, 64, 64, 0.3) 60deg,
+      rgba(96, 96, 96, 0.2) 90deg,
+      rgba(128, 128, 128, 0.3) 120deg
+    );
+}
+
+:global(.brick.portal.portal-one-way::after) {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(128, 128, 128, 0.4) 30%,
+    rgba(96, 96, 96, 0.3) 60%,
+    transparent 100%
+  );
+}
+

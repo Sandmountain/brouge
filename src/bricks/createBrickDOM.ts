@@ -13,7 +13,14 @@ export function createBrickDOM(
 ): HTMLElement {
   const element = document.createElement('div');
   // Use global class names that match CSS modules (defined with :global())
-  element.className = `${BRICK_CLASSES.brick} ${BRICK_CLASSES.gameMode} ${BRICK_CLASSES.hasBrick} ${brickData.type}`;
+  let className = `${BRICK_CLASSES.brick} ${BRICK_CLASSES.gameMode} ${BRICK_CLASSES.hasBrick} ${brickData.type}`;
+  
+  // Add one-way class for portals
+  if (brickData.type === 'portal' && brickData.isOneWay) {
+    className += ` ${BRICK_CLASSES.portalOneWay}`;
+  }
+  
+  element.className = className;
   
   // Set explicit size
   // Note: brickWidth is already the correct size (accounting for gap if half-size)

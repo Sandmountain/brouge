@@ -26,9 +26,10 @@ export interface BrickData {
   dropChance: number;
   coinValue: number;
   type: BrickType;
-  id?: string; // For fuse bricks to identify connections
+  id?: string; // For portal bricks to identify pairs, or fuse bricks to identify connections
   isHalfSize?: boolean; // If true, brick takes up half the width of a grid cell
   halfSizeAlign?: 'left' | 'right'; // Alignment for half-size blocks (default: 'left')
+  isOneWay?: boolean; // For portal bricks: if true, only receives teleports but doesn't send
 }
 
 export interface LevelData {

@@ -596,6 +596,9 @@ export class BrickBreaker extends Scene {
   ) {
     if (!brickData.id) return;
     
+    // If this portal is one-way, it can only receive, not send
+    if (brickData.isOneWay) return;
+    
     // Find the paired portal
     let pairedPortal: (Phaser.GameObjects.DOMElement & { brickData?: BrickData }) | null = null;
     
