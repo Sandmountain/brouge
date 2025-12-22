@@ -87,7 +87,8 @@ export function EditorGrid({
               const fullBrick = getBrickAtPosition(col, row);
               const isFullSizeBlock = fullBrick && !fullBrick.isHalfSize;
 
-              const isInDragPath =
+              // Check if left half is in drag path
+              const isLeftInDragPath =
                 dragState?.path.some(
                   (p: {
                     col: number;
@@ -97,9 +98,26 @@ export function EditorGrid({
                     if (isHalfSize) {
                       // In half-size mode, check specific half
                       return (
-                        p.col === col &&
-                        p.row === row &&
-                        (p.halfSlot === "left" || p.halfSlot === "right")
+                        p.col === col && p.row === row && p.halfSlot === "left"
+                      );
+                    }
+                    // In full-size mode, check if path includes this cell (spans both halves)
+                    return p.col === col && p.row === row;
+                  }
+                ) || false;
+
+              // Check if right half is in drag path
+              const isRightInDragPath =
+                dragState?.path.some(
+                  (p: {
+                    col: number;
+                    row: number;
+                    halfSlot?: "left" | "right";
+                  }) => {
+                    if (isHalfSize) {
+                      // In half-size mode, check specific half
+                      return (
+                        p.col === col && p.row === row && p.halfSlot === "right"
                       );
                     }
                     // In full-size mode, check if path includes this cell (spans both halves)
@@ -169,7 +187,7 @@ export function EditorGrid({
                             fullBrick?.color.toString(16).padStart(6, "0") ||
                             "ffffff"
                           }`
-                        : isInDragPath && !isHalfSize
+                        : isLeftInDragPath
                         ? isFuseDrag
                           ? "rgba(0, 255, 0, 0.2)"
                           : "rgba(255, 255, 255, 0.1)"
@@ -251,7 +269,7 @@ export function EditorGrid({
                             fullBrick?.color.toString(16).padStart(6, "0") ||
                             "ffffff"
                           }`
-                        : isInDragPath && !isHalfSize
+                        : isRightInDragPath
                         ? isFuseDrag
                           ? "rgba(0, 255, 0, 0.2)"
                           : "rgba(255, 255, 255, 0.1)"
