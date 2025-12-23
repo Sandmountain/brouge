@@ -510,6 +510,44 @@ export function LevelEditor({
     setSelectedBricks,
   ]);
 
+  // Handle "d" key to deselect/clear selection
+  useEffect(() => {
+    const hasMultiSelect = brushMode === "select" && selectedBricks.size > 0;
+    const hasSingleSelect = selectedBrick !== null;
+
+    if (!hasMultiSelect && !hasSingleSelect) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle "d" key, and make sure we're not in an input field
+      if (e.key !== "d" && e.key !== "D") {
+        return;
+      }
+
+      // Don't handle if user is typing in an input field
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      e.preventDefault();
+
+      // Clear selections
+      if (hasMultiSelect) {
+        setSelectedBricks(new Set());
+      }
+      if (hasSingleSelect) {
+        setSelectedBrick(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [brushMode, selectedBricks, selectedBrick, setSelectedBricks]);
+
   // Handle arrow key movement for selected bricks
   useEffect(() => {
     if (brushMode !== "select" || selectedBricks.size === 0) return;
@@ -1155,6 +1193,7 @@ export function LevelEditor({
                 zIndex: 1000,
                 boxSizing: "border-box",
                 width: "100%",
+                padding: "0 25px",
               }}
             >
               <div
