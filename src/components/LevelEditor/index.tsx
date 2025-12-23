@@ -442,6 +442,47 @@ export function LevelEditor({
     gridContainerRef
   );
 
+  // Handle Delete key to remove selected bricks
+  useEffect(() => {
+    if (brushMode !== "select" || selectedBricks.size === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") {
+        return;
+      }
+
+      e.preventDefault();
+
+      setLevelData((prev) => {
+        // Collect IDs of portal bricks to remove pairs
+        const portalIdsToRemove = new Set<string>();
+        selectedBricks.forEach((brick) => {
+          if (brick.type === "portal" && brick.id) {
+            portalIdsToRemove.add(brick.id);
+          }
+        });
+
+        // Remove selected bricks and their portal pairs
+        const filteredBricks = prev.bricks.filter(
+          (brick) =>
+            !selectedBricks.has(brick) &&
+            !(brick.id && portalIdsToRemove.has(brick.id))
+        );
+
+        return {
+          ...prev,
+          bricks: filteredBricks,
+        };
+      });
+
+      // Clear selection after deletion
+      setSelectedBricks(new Set());
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [brushMode, selectedBricks, setLevelData, setSelectedBricks]);
+
   // Handle arrow key movement for selected bricks
   useEffect(() => {
     if (brushMode !== "select" || selectedBricks.size === 0) return;
