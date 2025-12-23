@@ -20,7 +20,7 @@ export function SettingsModal({
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Settings</h2>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={onClose} title="Close settings">
             <span className="material-icons">close</span>
           </button>
         </div>

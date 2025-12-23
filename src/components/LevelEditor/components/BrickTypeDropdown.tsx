@@ -191,8 +191,9 @@ export function BrickTypeDropdown({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "4px",
+                width: "100%",
               }}
             >
               {BRICK_TYPES.map((type) => {
@@ -214,14 +215,16 @@ export function BrickTypeDropdown({
                       backgroundColor:
                         type.type === "default" ? typeColorHex : undefined,
                       width: "100%",
-                      height: "32px",
+                      aspectRatio: "3 / 1",
+                      minHeight: "32px",
                       position: "relative",
                       display: "flex",
-                      flexDirection: "column",
+                      flexDirection: "row",
                       alignItems: "center",
                       justifyContent: "center",
-                      padding: "4px",
+                      padding: "4px 8px",
                       cursor: "pointer",
+                      gap: "8px",
                     }}
                     onClick={() => {
                       if (type.type === "fuse-horizontal") {
@@ -235,7 +238,9 @@ export function BrickTypeDropdown({
                   >
                     <div
                       className="brick-preview-content"
-                      style={{ width: "100%", height: "100%" }}
+                      style={{
+                        width: "100%",
+                      }}
                     >
                       {type.type === "tnt" && <div className="tnt-fuse"></div>}
                       {type.type === "fuse-horizontal" && (
@@ -260,9 +265,11 @@ export function BrickTypeDropdown({
                     <div
                       className="brick-preview-label"
                       style={{
-                        fontSize: "8px",
-                        marginTop: "2px",
+                        fontSize: "11px",
                         textAlign: "center",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       {type.name}

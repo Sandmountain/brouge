@@ -28,7 +28,7 @@ export function BrickEditor({
     <div className="brick-editor-panel">
       <div className="brick-editor-header">
         <h3>Edit Brick</h3>
-        <button className="brick-editor-close" onClick={onClose}>
+        <button className="brick-editor-close" onClick={onClose} title="Close editor">
           <span className="material-icons">close</span>
         </button>
       </div>

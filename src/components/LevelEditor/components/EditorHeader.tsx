@@ -32,10 +32,15 @@ export function EditorHeader({
           <button
             onClick={onBackToGame}
             className="btn btn-secondary"
-            style={{ marginRight: "10px" }}
+            style={{
+              marginRight: "10px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
             title="Return to main menu"
           >
-            ← Back to Game
+            <span className="material-icons">home</span>
           </button>
         )}
         <h1>Level Editor</h1>
@@ -52,39 +57,70 @@ export function EditorHeader({
           <button
             onClick={onToggleSidebar}
             className="btn btn-secondary"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
             title={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
           >
-            {isSidebarVisible ? "◀ Hide Panel" : "▶ Show Panel"}
+            <span className="material-icons">
+              {isSidebarVisible ? "menu_open" : "menu"}
+            </span>
           </button>
         )}
         <button
           onClick={onTestLevel}
           className="btn btn-primary"
           disabled={levelData.bricks.length === 0}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           title={
             levelData.bricks.length === 0
               ? "Add some bricks first!"
               : "Test your level in the game"
           }
         >
-          Test Level
+          <span className="material-icons">play_arrow</span>
         </button>
         <button
           onClick={onSave}
           className="btn btn-primary"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           title="Save level to local storage"
         >
-          Save
+          <span className="material-icons">save</span>
         </button>
         <button
           onClick={onExport}
           className="btn btn-primary"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           title="Export level as JSON file"
         >
-          Export Level
+          <span className="material-icons">file_download</span>
         </button>
-        <label className="btn btn-secondary" title="Import level from JSON file">
-          Import Level
+        <label
+          className="btn btn-secondary"
+          title="Import level from JSON file"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <span className="material-icons">file_upload</span>
           <input
             type="file"
             accept=".json"
@@ -95,12 +131,16 @@ export function EditorHeader({
         <button
           onClick={onClear}
           className="btn btn-danger"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           title="Clear all bricks and reset level"
         >
-          Clear All
+          <span className="material-icons">delete</span>
         </button>
       </div>
     </div>
   );
 }
-
