@@ -1,4 +1,6 @@
 import React from "react";
+import { BrickType, LevelData } from "../../../game/types";
+import { BrickTypeDropdown } from "./BrickTypeDropdown";
 
 export type BrushMode = "paint" | "erase" | "select";
 
@@ -8,6 +10,13 @@ interface EditorToolbarProps {
   isHalfSize: boolean;
   onHalfSizeToggle: (isHalfSize: boolean) => void;
   onSettingsClick: () => void;
+  selectedBrickType: BrickType;
+  selectedColor: number;
+  isFuseMode: boolean;
+  levelData: LevelData;
+  onBrickTypeSelect: (type: BrickType) => void;
+  onFuseModeToggle: () => void;
+  onColorSelect: (color: number) => void;
 }
 
 export function EditorToolbar({
@@ -16,10 +25,23 @@ export function EditorToolbar({
   isHalfSize,
   onHalfSizeToggle,
   onSettingsClick,
+  selectedBrickType,
+  selectedColor,
+  isFuseMode,
+  levelData,
+  onBrickTypeSelect,
+  onFuseModeToggle,
+  onColorSelect,
 }: EditorToolbarProps) {
   return (
-    <div className="editor-toolbar">
-      <div className="toolbar-group">
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+      }}
+    >
+      <div style={{ display: "flex", gap: "4px" }}>
         <button
           className={`toolbar-button ${brushMode === "paint" ? "active" : ""}`}
           onClick={() => onBrushModeChange("paint")}
@@ -43,9 +65,36 @@ export function EditorToolbar({
         </button>
       </div>
 
-      <div className="toolbar-divider"></div>
+      <div
+        style={{
+          width: "1px",
+          height: "24px",
+          background: "#4ecdc4",
+          opacity: 0.3,
+        }}
+      />
 
-      <div className="toolbar-group">
+      {/* Brick type dropdown */}
+      <BrickTypeDropdown
+        selectedBrickType={selectedBrickType}
+        selectedColor={selectedColor}
+        isFuseMode={isFuseMode}
+        levelData={levelData}
+        onBrickTypeSelect={onBrickTypeSelect}
+        onFuseModeToggle={onFuseModeToggle}
+        onColorSelect={onColorSelect}
+      />
+
+      <div
+        style={{
+          width: "1px",
+          height: "24px",
+          background: "#4ecdc4",
+          opacity: 0.3,
+        }}
+      />
+
+      <div style={{ display: "flex", gap: "4px" }}>
         <button
           className={`toolbar-button ${!isHalfSize ? "active" : ""}`}
           onClick={() => onHalfSizeToggle(false)}
@@ -62,7 +111,14 @@ export function EditorToolbar({
         </button>
       </div>
 
-      <div className="toolbar-spacer"></div>
+      <div
+        style={{
+          width: "1px",
+          height: "24px",
+          background: "#4ecdc4",
+          opacity: 0.3,
+        }}
+      />
 
       <button
         className="toolbar-button"

@@ -107,6 +107,15 @@
   border-right: 2px solid #2a2a3e;
   display: flex;
   flex-direction: column;
+  transition: width 0.3s ease, padding 0.3s ease, border-width 0.3s ease;
+  flex-shrink: 0;
+}
+
+.editor-sidebar.hidden {
+  width: 0;
+  padding: 0;
+  border-right: none;
+  overflow: hidden;
 }
 
 .editor-toolbar {
@@ -498,7 +507,7 @@
 
 .editor-canvas {
   flex: 1;
-  padding: 20px;
+  padding: 10px;
   overflow: auto;
   display: flex;
   justify-content: center;

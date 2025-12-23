@@ -9,10 +9,8 @@ interface EditorHeaderProps {
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
   onBackToGame?: () => void;
-  onUndo?: () => void;
-  onRedo?: () => void;
-  canUndo?: boolean;
-  canRedo?: boolean;
+  onToggleSidebar?: () => void;
+  isSidebarVisible?: boolean;
 }
 
 export function EditorHeader({
@@ -24,10 +22,8 @@ export function EditorHeader({
   onImport,
   onClear,
   onBackToGame,
-  onUndo,
-  onRedo,
-  canUndo = false,
-  canRedo = false,
+  onToggleSidebar,
+  isSidebarVisible = true,
 }: EditorHeaderProps) {
   return (
     <div className="editor-header">
@@ -52,24 +48,13 @@ export function EditorHeader({
           className="level-name-input"
           placeholder="Level Name"
         />
-        {onUndo && (
+        {onToggleSidebar && (
           <button
-            onClick={onUndo}
+            onClick={onToggleSidebar}
             className="btn btn-secondary"
-            disabled={!canUndo}
-            title="Undo (Ctrl+Z)"
+            title={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
           >
-            ↶ Undo
-          </button>
-        )}
-        {onRedo && (
-          <button
-            onClick={onRedo}
-            className="btn btn-secondary"
-            disabled={!canRedo}
-            title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
-          >
-            ↷ Redo
+            {isSidebarVisible ? "◀ Hide Panel" : "▶ Show Panel"}
           </button>
         )}
         <button

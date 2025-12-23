@@ -18,11 +18,17 @@ export function GridSizeControls({
   onHeightChange,
 }: GridSizeControlsProps) {
   return (
-    <div className="sidebar-section">
-      <h3>Grid Size</h3>
-      <div className="grid-size-controls">
-        <label>
-          Width:
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            color: "#ffffff",
+          }}
+        >
+          W:
           <input
             type="number"
             min="5"
@@ -34,11 +40,27 @@ export function GridSizeControls({
                 (newWidth - 1) * (brickWidth + padding) + brickWidth / 2;
               onWidthChange(newWidth);
             }}
-            className="size-input"
+            style={{
+              width: "50px",
+              padding: "4px 6px",
+              background: "#2a2a3e",
+              border: "1px solid #4ecdc4",
+              borderRadius: "4px",
+              color: "#ffffff",
+              fontSize: "12px",
+            }}
           />
         </label>
-        <label>
-          Height:
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            color: "#ffffff",
+          }}
+        >
+          H:
           <input
             type="number"
             min="3"
@@ -50,10 +72,17 @@ export function GridSizeControls({
                 (newHeight - 1) * (brickHeight + padding) + brickHeight / 2;
               onHeightChange(newHeight);
             }}
-            className="size-input"
+            style={{
+              width: "50px",
+              padding: "4px 6px",
+              background: "#2a2a3e",
+              border: "1px solid #4ecdc4",
+              borderRadius: "4px",
+              color: "#ffffff",
+              fontSize: "12px",
+            }}
           />
         </label>
-      </div>
     </div>
   );
 }

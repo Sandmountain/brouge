@@ -1,28 +1,17 @@
 import React from "react";
 import { LevelData } from "../../../game/types";
-import { GridSizeControls } from "./GridSizeControls";
 import { LevelStats } from "./LevelStats";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   levelData: LevelData;
-  brickWidth: number;
-  brickHeight: number;
-  padding: number;
-  onWidthChange: (width: number) => void;
-  onHeightChange: (height: number) => void;
 }
 
 export function SettingsModal({
   isOpen,
   onClose,
   levelData,
-  brickWidth,
-  brickHeight,
-  padding,
-  onWidthChange,
-  onHeightChange,
 }: SettingsModalProps) {
   if (!isOpen) return null;
 
@@ -36,14 +25,6 @@ export function SettingsModal({
           </button>
         </div>
         <div className="modal-body">
-          <GridSizeControls
-            levelData={levelData}
-            brickWidth={brickWidth}
-            brickHeight={brickHeight}
-            padding={padding}
-            onWidthChange={onWidthChange}
-            onHeightChange={onHeightChange}
-          />
           <LevelStats levelData={levelData} />
         </div>
       </div>

@@ -24,6 +24,7 @@ export const useDragToPlace = (
   isFuseMode: boolean,
   brushMode: "paint" | "erase" | "select",
   onBricksPlaced: (bricks: BrickData[]) => void,
+  onBricksErased?: (path: Array<{ col: number; row: number; halfSlot?: "left" | "right" }>) => void,
   isHalfSize?: boolean,
   halfSizeAlign: "left" | "right" = "left"
 ) => {
@@ -36,7 +37,19 @@ export const useDragToPlace = (
       brick: BrickData | null,
       halfSlot?: "left" | "right"
     ) => {
-      if (
+      if (brushMode === "erase") {
+        // Start drag erase - track path of bricks to erase
+        setDragState({
+          isDragging: true,
+          brickType: "default", // Not used for erase, but required by type
+          startCol: col,
+          startRow: row,
+          lastCol: col,
+          lastRow: row,
+          path: [{ col, row, halfSlot }],
+          halfSlot: isHalfSize ? halfSlot || "left" : undefined,
+        });
+      } else if (
         brushMode === "paint" &&
         selectedBrickType !== "boost" &&
         selectedBrickType !== "portal" &&
@@ -64,9 +77,9 @@ export const useDragToPlace = (
     (col: number, row: number, halfSlot?: "left" | "right") => {
       if (
         dragState?.isDragging &&
-        brushMode === "paint" &&
-        selectedBrickType !== "boost" &&
-        selectedBrickType !== "portal" &&
+        (brushMode === "paint" || brushMode === "erase") &&
+        (brushMode === "erase" ||
+          (selectedBrickType !== "boost" && selectedBrickType !== "portal")) &&
         col >= 0 &&
         col < levelData.width &&
         row >= 0 &&
@@ -120,6 +133,19 @@ export const useDragToPlace = (
         const { path, brickType } = dragState;
 
         if (path.length === 0) {
+          setDragState(null);
+          return;
+        }
+
+        // Handle erase mode
+        if (brushMode === "erase" && onBricksErased) {
+          onBricksErased(path);
+          setDragState(null);
+          return;
+        }
+
+        // Only proceed with placing bricks if in paint mode
+        if (brushMode !== "paint") {
           setDragState(null);
           return;
         }
@@ -205,6 +231,8 @@ export const useDragToPlace = (
     onBricksPlaced,
     isHalfSize,
     halfSizeAlign,
+    brushMode,
+    onBricksErased,
   ]);
 
   return { dragState, handleMouseDown, handleMouseEnter };

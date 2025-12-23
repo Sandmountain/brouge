@@ -47,6 +47,11 @@ interface EditorGridProps {
     halfSlot?: "left" | "right"
   ) => void;
   onSelectionStart?: (e: React.MouseEvent) => void;
+  onWidthChange?: (width: number) => void;
+  onHeightChange?: (height: number) => void;
+  onBrushModeChange?: (mode: BrushMode) => void;
+  onHalfSizeToggle?: (isHalfSize: boolean) => void;
+  onSettingsClick?: () => void;
 }
 
 export function EditorGrid({
@@ -115,7 +120,7 @@ export function EditorGrid({
   return (
     <div
       className="editor-canvas"
-      style={{ overflow: "visible" }}
+      style={{ overflow: "visible", width: "100%", boxSizing: "border-box" }}
       onMouseDown={brushMode === "select" ? onSelectionStart : undefined}
     >
       <div

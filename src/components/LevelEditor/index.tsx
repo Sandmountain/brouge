@@ -10,11 +10,11 @@ import { createBrickData } from "./utils/brickCreation";
 import { saveToStorage, loadFromStorage } from "./utils/storage";
 import { cleanBricks } from "./utils/validation";
 import { EditorHeader } from "./components/EditorHeader";
-import { BrickSelector } from "./components/BrickSelector";
-import { ColorPicker } from "./components/ColorPicker";
+// BrickSelector and ColorPicker removed - functionality moved to toolbar dropdown
 import { BrickEditor } from "./components/BrickEditor";
 import { EditorGrid } from "./components/EditorGrid";
 import { EditorToolbar, BrushMode } from "./components/EditorToolbar";
+import { GridSizeControls } from "./components/GridSizeControls";
 import { SettingsModal } from "./components/SettingsModal";
 import { useSelection } from "./hooks/useSelection";
 import { useHistory } from "./hooks/useHistory";
@@ -45,9 +45,10 @@ export function LevelEditor({
   const [isFuseMode, setIsFuseMode] = useState(false);
   const [isHalfSize, setIsHalfSize] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // Sidebar removed - brick selection moved to toolbar dropdown
 
-  // Calculate available space (accounting for sidebar ~300px and padding)
-  const availableWidth = windowSize.width - 400;
+  // Calculate available space (no sidebar anymore)
+  const availableWidth = windowSize.width - 100;
   const availableHeight = windowSize.height - 250;
 
   // We need a default levelData to calculate initial dimensions
@@ -170,6 +171,52 @@ export function LevelEditor({
       EventBus.removeListener("return-to-editor");
     };
   }, [onReturnFromTest]);
+
+  // Keyboard shortcuts for brush modes and block sizes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input field
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      // Don't trigger if modifier keys are pressed (except for undo/redo which are handled elsewhere)
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case "b":
+          e.preventDefault();
+          setBrushMode("paint");
+          break;
+        case "e":
+          e.preventDefault();
+          setBrushMode("erase");
+          break;
+        case "s":
+          e.preventDefault();
+          setBrushMode("select");
+          break;
+        case "m":
+          e.preventDefault();
+          setIsHalfSize(false);
+          break;
+        case "n":
+          e.preventDefault();
+          setIsHalfSize(true);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const getBrickAtPosition = useCallback(
     (
@@ -295,6 +342,75 @@ export function LevelEditor({
     [setLevelData, brickWidth, brickHeight, padding]
   );
 
+  const handleBricksErased = useCallback(
+    (
+      path: Array<{ col: number; row: number; halfSlot?: "left" | "right" }>
+    ) => {
+      setLevelData((prev) => {
+        // Create a set of positions to erase for efficient lookup
+        const positionsToErase = new Set(
+          path.map((p) => {
+            if (p.halfSlot !== undefined) {
+              return `${p.col},${p.row},${p.halfSlot}`;
+            }
+            return `${p.col},${p.row}`;
+          })
+        );
+
+        // Filter out bricks at positions in the path
+        // For half-size blocks, check specific halfSlot
+        // For full-size blocks, check if any brick at that position
+        const filteredBricks = prev.bricks.filter((brick) => {
+          if (brick.col === undefined || brick.row === undefined) return true;
+
+          if (brick.isHalfSize && brick.halfSizeAlign) {
+            const key = `${brick.col},${brick.row},${brick.halfSizeAlign}`;
+            return !positionsToErase.has(key);
+          } else {
+            // For full-size blocks, check if this position is in the erase path
+            const key = `${brick.col},${brick.row}`;
+            // Also check for half-slot keys that might overlap
+            const leftKey = `${brick.col},${brick.row},left`;
+            const rightKey = `${brick.col},${brick.row},right`;
+            return (
+              !positionsToErase.has(key) &&
+              !positionsToErase.has(leftKey) &&
+              !positionsToErase.has(rightKey)
+            );
+          }
+        });
+
+        // Also handle portal pairs - if erasing a portal, remove its pair
+        const erasedBrickIds = new Set<string>();
+        prev.bricks.forEach((brick) => {
+          if (brick.col === undefined || brick.row === undefined) return;
+          const key =
+            brick.isHalfSize && brick.halfSizeAlign
+              ? `${brick.col},${brick.row},${brick.halfSizeAlign}`
+              : `${brick.col},${brick.row}`;
+          if (
+            positionsToErase.has(key) &&
+            brick.type === "portal" &&
+            brick.id
+          ) {
+            erasedBrickIds.add(brick.id);
+          }
+        });
+
+        // Remove portal pairs
+        const finalBricks = filteredBricks.filter(
+          (brick) => !(brick.id && erasedBrickIds.has(brick.id))
+        );
+
+        return {
+          ...prev,
+          bricks: finalBricks,
+        };
+      });
+    },
+    [setLevelData]
+  );
+
   const { dragState, handleMouseDown, handleMouseEnter } = useDragToPlace(
     levelData,
     brickWidth,
@@ -305,6 +421,7 @@ export function LevelEditor({
     isFuseMode,
     brushMode,
     handleBricksPlaced,
+    handleBricksErased,
     isHalfSize,
     "left" // Default to left alignment
   );
@@ -615,6 +732,11 @@ export function LevelEditor({
     brickWidth,
     brickHeight,
     padding,
+    dragState,
+    brushMode,
+    isHalfSize,
+    handleEraseBrick,
+    dragState,
   ]);
 
   const handleCellClick = useCallback(
@@ -624,23 +746,27 @@ export function LevelEditor({
         return;
       }
 
+      // Don't handle single clicks in erase mode if we're using drag - let drag handle it
+      // Only handle if there's no active drag
       if (brushMode === "erase") {
-        // If half-size mode, erase the specific half; otherwise erase any brick at position
-        if (isHalfSize && halfSlot) {
-          setLevelData((prev) => ({
-            ...prev,
-            bricks: prev.bricks.filter(
-              (b) =>
-                !(
-                  b.col === col &&
-                  b.row === row &&
-                  b.isHalfSize &&
-                  b.halfSizeAlign === halfSlot
-                )
-            ),
-          }));
-        } else {
-          handleEraseBrick(col, row);
+        if (!dragState?.isDragging) {
+          // Single click erase (not drag)
+          if (isHalfSize && halfSlot) {
+            setLevelData((prev) => ({
+              ...prev,
+              bricks: prev.bricks.filter(
+                (b) =>
+                  !(
+                    b.col === col &&
+                    b.row === row &&
+                    b.isHalfSize &&
+                    b.halfSizeAlign === halfSlot
+                  )
+              ),
+            }));
+          } else {
+            handleEraseBrick(col, row);
+          }
         }
         return;
       }
@@ -861,10 +987,6 @@ export function LevelEditor({
         onLevelNameChange={(name) =>
           setLevelData((prev) => ({ ...prev, name }))
         }
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
         onTestLevel={() => {
           const testData = {
             ...levelData,
@@ -883,76 +1005,178 @@ export function LevelEditor({
       />
 
       <div className="editor-content">
-        <div className="editor-sidebar">
-          <EditorToolbar
-            brushMode={brushMode}
-            onBrushModeChange={setBrushMode}
-            isHalfSize={isHalfSize}
-            onHalfSizeToggle={setIsHalfSize}
-            onSettingsClick={() => setIsSettingsOpen(true)}
-          />
+        {/* Sidebar removed - brick selection moved to toolbar dropdown */}
 
-          <BrickSelector
-            selectedBrickType={selectedBrickType}
-            selectedColor={selectedColor}
-            isFuseMode={isFuseMode}
-            onBrickTypeSelect={(type) => {
-              setSelectedBrickType(type);
-              setIsFuseMode(false);
-            }}
-            onFuseModeToggle={() => {
-              setIsFuseMode(!isFuseMode);
-              if (!isFuseMode) {
-                setSelectedBrickType("default");
-              }
-            }}
-          />
+        <div
+          className="editor-main-area"
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            margin: "8px",
+          }}
+        >
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            {/* Toolbar and grid size controls at top left */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                zIndex: 1000,
+                boxSizing: "border-box",
+                width: "100%",
+              }}
+            >
+              <div
+                style={{ display: "flex", gap: "10px", alignItems: "center" }}
+              >
+                {/* Undo/Redo buttons */}
+                <div
+                  style={{
+                    background: "#1a1a2e",
+                    padding: "8px",
+                    borderRadius: "8px",
+                    border: "1px solid #4ecdc4",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+                    display: "flex",
+                    gap: "4px",
+                  }}
+                >
+                  <button
+                    onClick={handleUndo}
+                    className="toolbar-button"
+                    disabled={!canUndo}
+                    title="Undo (Ctrl+Z)"
+                    style={{
+                      opacity: canUndo ? 1 : 0.5,
+                      cursor: canUndo ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    <span className="material-icons">undo</span>
+                  </button>
+                  <button
+                    onClick={handleRedo}
+                    className="toolbar-button"
+                    disabled={!canRedo}
+                    title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+                    style={{
+                      opacity: canRedo ? 1 : 0.5,
+                      cursor: canRedo ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    <span className="material-icons">redo</span>
+                  </button>
+                </div>
 
-          {isFuseMode && (
-            <div className="sidebar-section">
-              <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
-                Click and drag to place fuses. The system will automatically
-                choose the correct fuse type based on your drag direction.
-              </p>
+                {/* Toolbar */}
+                {brushMode !== undefined && (
+                  <div
+                    style={{
+                      background: "#1a1a2e",
+                      padding: "8px",
+                      borderRadius: "8px",
+                      border: "1px solid #4ecdc4",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+                    }}
+                  >
+                    <EditorToolbar
+                      brushMode={brushMode}
+                      onBrushModeChange={setBrushMode}
+                      isHalfSize={isHalfSize}
+                      onHalfSizeToggle={setIsHalfSize}
+                      onSettingsClick={() => setIsSettingsOpen(true)}
+                      selectedBrickType={selectedBrickType}
+                      selectedColor={selectedColor}
+                      isFuseMode={isFuseMode}
+                      levelData={levelData}
+                      onBrickTypeSelect={(type) => {
+                        setSelectedBrickType(type);
+                        setIsFuseMode(false);
+                      }}
+                      onFuseModeToggle={() => {
+                        setIsFuseMode(!isFuseMode);
+                        if (!isFuseMode) {
+                          setSelectedBrickType("default");
+                        }
+                      }}
+                      onColorSelect={setSelectedColor}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Grid size controls */}
+              <div
+                style={{
+                  background: "#1a1a2e",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  border: "1px solid #4ecdc4",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <GridSizeControls
+                  levelData={levelData}
+                  brickWidth={brickWidth}
+                  brickHeight={brickHeight}
+                  padding={padding}
+                  onWidthChange={(newWidth) => {
+                    setLevelData((prev) => {
+                      const maxX =
+                        (newWidth - 1) * (brickWidth + padding) +
+                        brickWidth / 2;
+                      return {
+                        ...prev,
+                        width: newWidth,
+                        bricks: prev.bricks.filter((b) => b.x <= maxX),
+                      };
+                    });
+                  }}
+                  onHeightChange={(newHeight) => {
+                    setLevelData((prev) => {
+                      const maxY =
+                        (newHeight - 1) * (brickHeight + padding) +
+                        brickHeight / 2;
+                      return {
+                        ...prev,
+                        height: newHeight,
+                        bricks: prev.bricks.filter((b) => b.y <= maxY),
+                      };
+                    });
+                  }}
+                />
+              </div>
             </div>
-          )}
-
-          {selectedBrickType === "default" && !isFuseMode && (
-            <ColorPicker
-              selectedColor={selectedColor}
-              onColorSelect={setSelectedColor}
+            {selectedBrick && (
+              <BrickEditor
+                selectedBrick={selectedBrick}
+                onUpdate={updateBrick}
+                onClose={() => setSelectedBrick(null)}
+                levelData={levelData}
+              />
+            )}
+            <EditorGrid
               levelData={levelData}
+              brickWidth={brickWidth}
+              brickHeight={brickHeight}
+              padding={padding}
+              getBrickAtPosition={getBrickAtPosition}
+              dragState={dragState}
+              isHalfSize={isHalfSize}
+              brushMode={brushMode}
+              selectedBricks={selectedBricks}
+              selectionState={selectionState}
+              gridContainerRef={gridContainerRef}
+              onCellClick={handleCellClick}
+              onCellMouseDown={handleCellMouseDown}
+              onCellMouseEnter={handleCellMouseEnter}
+              onCellRightClick={handleCellRightClick}
+              onSelectionStart={handleSelectionStart}
             />
-          )}
-        </div>
-
-        <div className="editor-main-area" style={{ position: "relative" }}>
-          {selectedBrick && (
-            <BrickEditor
-              selectedBrick={selectedBrick}
-              onUpdate={updateBrick}
-              onClose={() => setSelectedBrick(null)}
-              levelData={levelData}
-            />
-          )}
-          <EditorGrid
-            levelData={levelData}
-            brickWidth={brickWidth}
-            brickHeight={brickHeight}
-            padding={padding}
-            getBrickAtPosition={getBrickAtPosition}
-            dragState={dragState}
-            isHalfSize={isHalfSize}
-            brushMode={brushMode}
-            selectedBricks={selectedBricks}
-            selectionState={selectionState}
-            gridContainerRef={gridContainerRef}
-            onCellClick={handleCellClick}
-            onCellMouseDown={handleCellMouseDown}
-            onCellMouseEnter={handleCellMouseEnter}
-            onCellRightClick={handleCellRightClick}
-            onSelectionStart={handleSelectionStart}
-          />
+          </div>
         </div>
       </div>
 
@@ -960,31 +1184,6 @@ export function LevelEditor({
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         levelData={levelData}
-        brickWidth={brickWidth}
-        brickHeight={brickHeight}
-        padding={padding}
-        onWidthChange={(newWidth) => {
-          setLevelData((prev) => {
-            const maxX =
-              (newWidth - 1) * (brickWidth + padding) + brickWidth / 2;
-            return {
-              ...prev,
-              width: newWidth,
-              bricks: prev.bricks.filter((b) => b.x <= maxX),
-            };
-          });
-        }}
-        onHeightChange={(newHeight) => {
-          setLevelData((prev) => {
-            const maxY =
-              (newHeight - 1) * (brickHeight + padding) + brickHeight / 2;
-            return {
-              ...prev,
-              height: newHeight,
-              bricks: prev.bricks.filter((b) => b.y <= maxY),
-            };
-          });
-        }}
       />
     </div>
   );
