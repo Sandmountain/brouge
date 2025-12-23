@@ -1,6 +1,6 @@
 import React from "react";
 
-type BrushMode = "paint" | "erase";
+export type BrushMode = "paint" | "erase" | "select";
 
 interface EditorToolbarProps {
   brushMode: BrushMode;
@@ -33,6 +33,13 @@ export function EditorToolbar({
           title="Erase"
         >
           <span className="material-icons">clear</span>
+        </button>
+        <button
+          className={`toolbar-button ${brushMode === "select" ? "active" : ""}`}
+          onClick={() => onBrushModeChange("select")}
+          title="Select"
+        >
+          <span className="material-icons">select_all</span>
         </button>
       </div>
 

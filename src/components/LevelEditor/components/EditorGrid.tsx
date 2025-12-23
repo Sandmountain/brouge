@@ -18,6 +18,16 @@ interface EditorGridProps {
     path: Array<{ col: number; row: number; halfSlot?: "left" | "right" }>;
   } | null;
   isHalfSize: boolean;
+  brushMode: "paint" | "erase" | "select";
+  selectedBricks: Set<BrickData>;
+  selectionState: {
+    isSelecting: boolean;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+  } | null;
+  gridContainerRef: React.RefObject<HTMLDivElement | null>;
   onCellClick: (col: number, row: number, halfSlot?: "left" | "right") => void;
   onCellMouseDown: (
     e: React.MouseEvent,
@@ -36,6 +46,7 @@ interface EditorGridProps {
     row: number,
     halfSlot?: "left" | "right"
   ) => void;
+  onSelectionStart?: (e: React.MouseEvent) => void;
 }
 
 export function EditorGrid({
@@ -46,10 +57,15 @@ export function EditorGrid({
   getBrickAtPosition,
   dragState,
   isHalfSize,
+  brushMode,
+  selectedBricks,
+  selectionState,
+  gridContainerRef,
   onCellClick,
   onCellMouseDown,
   onCellMouseEnter,
   onCellRightClick,
+  onSelectionStart,
 }: EditorGridProps) {
   // Calculate half-size block width
   // Gap between half blocks should match the grid padding (spacing between cells)
@@ -59,10 +75,55 @@ export function EditorGrid({
   // Calculate the width of each half container div
   // Each half div should be 50% of the cell width
   const halfDivWidth = "50%";
+
+  // Calculate selection rectangle bounds (pixel coordinates, constrained to grid)
+  // Grid has 20px padding, so coordinates are already relative to grid container
+  const selectionRect = selectionState
+    ? (() => {
+        // Grid padding is 20px
+        const gridPadding = 20;
+        const gridWidth = levelData.width * (brickWidth + padding) - padding;
+        const gridHeight = levelData.height * (brickHeight + padding) - padding;
+
+        // Constrain coordinates to grid bounds (accounting for padding)
+        const startX = Math.max(
+          gridPadding,
+          Math.min(selectionState.startX, gridWidth + gridPadding)
+        );
+        const startY = Math.max(
+          gridPadding,
+          Math.min(selectionState.startY, gridHeight + gridPadding)
+        );
+        const currentX = Math.max(
+          gridPadding,
+          Math.min(selectionState.currentX, gridWidth + gridPadding)
+        );
+        const currentY = Math.max(
+          gridPadding,
+          Math.min(selectionState.currentY, gridHeight + gridPadding)
+        );
+
+        const left = Math.min(startX, currentX);
+        const top = Math.min(startY, currentY);
+        const width = Math.abs(currentX - startX);
+        const height = Math.abs(currentY - startY);
+
+        return { left, top, width, height };
+      })()
+    : null;
+
   return (
-    <div className="editor-canvas" style={{ overflow: "visible" }}>
-      <div className="canvas-wrapper" style={{ overflow: "visible" }}>
+    <div
+      className="editor-canvas"
+      style={{ overflow: "visible" }}
+      onMouseDown={brushMode === "select" ? onSelectionStart : undefined}
+    >
+      <div
+        className="canvas-wrapper"
+        style={{ overflow: "visible", position: "relative" }}
+      >
         <div
+          ref={gridContainerRef}
           className="canvas-grid"
           style={
             {
@@ -72,9 +133,93 @@ export function EditorGrid({
               "--cell-width": `${brickWidth}px`,
               "--cell-height": `${brickHeight}px`,
               overflow: "visible", // Allow full-size blocks to overflow
+              position: "relative",
             } as React.CSSProperties
           }
         >
+          {/* Selection rectangle - positioned using absolute pixels, constrained to grid */}
+          {selectionRect && brushMode === "select" && (
+            <div
+              className="selection-rectangle"
+              style={{
+                position: "absolute",
+                left: `${selectionRect.left}px`,
+                top: `${selectionRect.top}px`,
+                width: `${selectionRect.width}px`,
+                height: `${selectionRect.height}px`,
+                border: "2px dashed rgba(100, 150, 255, 0.8)",
+                backgroundColor: "rgba(100, 150, 255, 0.1)",
+                pointerEvents: "none",
+                zIndex: 1000,
+              }}
+            />
+          )}
+
+          {/* Selected brick highlights - positioned using exact pixel coordinates */}
+          {brushMode === "select" &&
+            Array.from(selectedBricks).map((brick) => {
+              if (brick.col === undefined || brick.row === undefined)
+                return null;
+
+              // Use stored dimensions or current dimensions
+              const refWidth = levelData.brickWidth || brickWidth;
+              const refHeight = levelData.brickHeight || brickHeight;
+              const refPadding = levelData.padding || padding;
+              const gridPadding = 20; // Grid container padding
+
+              let highlightLeft: number;
+              let highlightTop: number;
+              let highlightWidth: number;
+              let highlightHeight: number;
+
+              if (brick.isHalfSize && brick.halfSizeAlign) {
+                // Half-size block - calculate exact position
+                const halfBlockGap = refPadding;
+                const halfWidth = (refWidth - halfBlockGap) / 2;
+                const cellLeft = brick.col * (refWidth + refPadding);
+                const cellTop = brick.row * (refHeight + refPadding);
+
+                if (brick.halfSizeAlign === "left") {
+                  highlightLeft = gridPadding + cellLeft;
+                } else {
+                  // Right half
+                  const cellCenter = cellLeft + refWidth / 2;
+                  highlightLeft = gridPadding + cellCenter + halfBlockGap / 2;
+                }
+                highlightTop = gridPadding + cellTop;
+                highlightWidth = halfWidth;
+                highlightHeight = refHeight;
+              } else {
+                // Full-size block - centered in cell
+                const cellLeft = brick.col * (refWidth + refPadding);
+                const cellTop = brick.row * (refHeight + refPadding);
+                highlightLeft = gridPadding + cellLeft;
+                highlightTop = gridPadding + cellTop;
+                highlightWidth = refWidth;
+                highlightHeight = refHeight;
+              }
+
+              return (
+                <div
+                  key={`${brick.col}-${brick.row}-${
+                    brick.isHalfSize ? brick.halfSizeAlign : "full"
+                  }`}
+                  className="selected-brick-highlight"
+                  style={{
+                    position: "absolute",
+                    left: `${highlightLeft}px`,
+                    top: `${highlightTop}px`,
+                    width: `${highlightWidth}px`,
+                    height: `${highlightHeight}px`,
+                    border: "2px solid rgba(100, 150, 255, 0.8)",
+                    backgroundColor: "rgba(100, 150, 255, 0.2)",
+                    pointerEvents: "none",
+                    zIndex: 999,
+                  }}
+                />
+              );
+            })}
+
           {Array.from({ length: levelData.height }).map((_, row) =>
             Array.from({ length: levelData.width }).map((_, col) => {
               // Grid is always built on half-size foundation

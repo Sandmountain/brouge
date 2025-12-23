@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { LevelData, BrickData, BrickType } from "../../game/types";
 import "../LevelEditor.css";
 import { EventBus } from "../../game/EventBus";
@@ -14,8 +14,9 @@ import { BrickSelector } from "./components/BrickSelector";
 import { ColorPicker } from "./components/ColorPicker";
 import { BrickEditor } from "./components/BrickEditor";
 import { EditorGrid } from "./components/EditorGrid";
-import { EditorToolbar } from "./components/EditorToolbar";
+import { EditorToolbar, BrushMode } from "./components/EditorToolbar";
 import { SettingsModal } from "./components/SettingsModal";
+import { useSelection } from "./hooks/useSelection";
 
 interface LevelEditorProps {
   onTestLevel?: (levelData: LevelData) => void;
@@ -39,7 +40,7 @@ export function LevelEditor({
     useState<BrickType>("default");
   const [selectedColor, setSelectedColor] = useState<number>(DEFAULT_COLORS[0]);
   const [selectedBrick, setSelectedBrick] = useState<BrickData | null>(null);
-  const [brushMode, setBrushMode] = useState<"paint" | "erase">("paint");
+  const [brushMode, setBrushMode] = useState<BrushMode>("paint");
   const [isFuseMode, setIsFuseMode] = useState(false);
   const [isHalfSize, setIsHalfSize] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -242,6 +243,314 @@ export function LevelEditor({
     isHalfSize,
     "left" // Default to left alignment
   );
+
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    selectionState,
+    selectedBricks,
+    setSelectedBricks,
+    handleSelectionStart,
+  } = useSelection(
+    levelData,
+    brickWidth,
+    brickHeight,
+    padding,
+    getBrickAtPosition,
+    gridContainerRef
+  );
+
+  // Handle arrow key movement for selected bricks
+  useEffect(() => {
+    if (brushMode !== "select" || selectedBricks.size === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key !== "ArrowUp" &&
+        e.key !== "ArrowDown" &&
+        e.key !== "ArrowLeft" &&
+        e.key !== "ArrowRight"
+      ) {
+        return;
+      }
+
+      e.preventDefault();
+
+      const deltaCol =
+        e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+      const deltaRow = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+
+      if (deltaCol === 0 && deltaRow === 0) return;
+
+      setLevelData((prev) => {
+        // Track original positions of selected bricks for updating selection
+        const originalPositions = new Map<
+          BrickData,
+          { col: number; row: number; halfSizeAlign?: "left" | "right" }
+        >();
+        selectedBricks.forEach((brick) => {
+          if (brick.col !== undefined && brick.row !== undefined) {
+            originalPositions.set(brick, {
+              col: brick.col,
+              row: brick.row,
+              halfSizeAlign: brick.halfSizeAlign,
+            });
+          }
+        });
+
+        // Create a map of current brick positions to avoid conflicts
+        const currentBrickMap = new Map<string, BrickData>();
+        prev.bricks.forEach((b) => {
+          if (b.col !== undefined && b.row !== undefined) {
+            if (b.isHalfSize && b.halfSizeAlign) {
+              currentBrickMap.set(`${b.col},${b.row},${b.halfSizeAlign}`, b);
+            } else {
+              currentBrickMap.set(`${b.col},${b.row}`, b);
+            }
+          }
+        });
+
+        // Calculate new positions for all selected bricks
+        // All blocks move by half-cell increments
+        const newPositions = new Map<
+          BrickData,
+          { col: number; row: number; halfSizeAlign?: "left" | "right" }
+        >();
+
+        let canMove = true;
+        for (const brick of selectedBricks) {
+          if (brick.col === undefined || brick.row === undefined) continue;
+
+          // For all blocks, treat them as having a half-size alignment for movement
+          // Full-size blocks will use a stored alignment or default to "left"
+          const currentAlign = brick.isHalfSize
+            ? brick.halfSizeAlign || "left"
+            : (brick as any).movementAlign || "left";
+
+          let newCol = brick.col;
+          let newRow = brick.row;
+          let newHalfSizeAlign: "left" | "right" = currentAlign;
+
+          // Handle horizontal movement (half-cell increments)
+          if (deltaCol !== 0) {
+            if (deltaCol < 0) {
+              // Moving left
+              if (currentAlign === "right") {
+                // Switch to left in same cell
+                newHalfSizeAlign = "left";
+              } else {
+                // Currently left - move to right of cell to the left
+                newCol = brick.col - 1;
+                newHalfSizeAlign = "right";
+              }
+            } else {
+              // Moving right
+              if (currentAlign === "left") {
+                // Switch to right in same cell
+                newHalfSizeAlign = "right";
+              } else {
+                // Currently right - move to left of cell to the right
+                newCol = brick.col + 1;
+                newHalfSizeAlign = "left";
+              }
+            }
+          }
+
+          // Handle vertical movement (full row, same half-slot)
+          if (deltaRow !== 0) {
+            newRow = brick.row + deltaRow;
+          }
+
+          // Check bounds
+          if (
+            newCol < 0 ||
+            newCol >= prev.width ||
+            newRow < 0 ||
+            newRow >= prev.height
+          ) {
+            canMove = false;
+            break;
+          }
+
+          // For full-size blocks, check if the target cell is occupied
+          // For half-size blocks, check if the specific half-slot is occupied
+          if (brick.isHalfSize) {
+            const targetKey = `${newCol},${newRow},${newHalfSizeAlign}`;
+            if (currentBrickMap.has(targetKey)) {
+              const existingBrick = currentBrickMap.get(targetKey);
+              if (!existingBrick || !selectedBricks.has(existingBrick)) {
+                canMove = false;
+                break;
+              }
+            }
+          } else {
+            // Full-size block - check if target cell has any blocks
+            const leftKey = `${newCol},${newRow},left`;
+            const rightKey = `${newCol},${newRow},right`;
+            const fullKey = `${newCol},${newRow}`;
+
+            const leftBrick = currentBrickMap.get(leftKey);
+            const rightBrick = currentBrickMap.get(rightKey);
+            const fullBrick = currentBrickMap.get(fullKey);
+
+            // Check if any position is occupied by a non-selected brick
+            if (leftBrick && !selectedBricks.has(leftBrick)) {
+              canMove = false;
+              break;
+            }
+            if (rightBrick && !selectedBricks.has(rightBrick)) {
+              canMove = false;
+              break;
+            }
+            if (fullBrick && !selectedBricks.has(fullBrick)) {
+              canMove = false;
+              break;
+            }
+          }
+
+          newPositions.set(brick, {
+            col: newCol,
+            row: newRow,
+            halfSizeAlign: brick.isHalfSize ? newHalfSizeAlign : undefined,
+          });
+
+          // Store movement alignment for full-size blocks
+          if (!brick.isHalfSize) {
+            (brick as any).movementAlign = newHalfSizeAlign;
+          }
+        }
+
+        // Update all bricks - move selected ones, keep others in place
+        const updatedBricks = prev.bricks.map((brick) => {
+          if (!selectedBricks.has(brick)) {
+            // Not selected - keep in place
+            return brick;
+          }
+
+          const newPos = newPositions.get(brick);
+          if (!newPos) {
+            // Out of bounds - don't move
+            return brick;
+          }
+
+          // Recalculate position
+          const refWidth = prev.brickWidth || brickWidth;
+          const refHeight = prev.brickHeight || brickHeight;
+          const refPadding = prev.padding || padding;
+
+          let newX: number;
+          let newY: number;
+          const newHalfSizeAlign = newPos.halfSizeAlign;
+          const movementAlign =
+            (brick as any).movementAlign || newHalfSizeAlign || "left";
+
+          if (brick.isHalfSize && newHalfSizeAlign) {
+            const halfBlockGap = refPadding;
+            const halfWidth = (refWidth - halfBlockGap) / 2;
+            const cellLeft = newPos.col * (refWidth + refPadding);
+            const cellCenter = cellLeft + refWidth / 2;
+
+            if (newHalfSizeAlign === "left") {
+              newX = cellLeft + halfWidth / 2;
+            } else {
+              newX = cellCenter + halfBlockGap / 2 + halfWidth / 2;
+            }
+            newY = newPos.row * (refHeight + refPadding) + refHeight / 2;
+          } else {
+            // Full-size block - position based on movement alignment
+            const cellLeft = newPos.col * (refWidth + refPadding);
+            const cellCenter = cellLeft + refWidth / 2;
+
+            if (movementAlign === "left") {
+              // Align to left half of cell, but still full width
+              newX = cellLeft + refWidth / 2;
+            } else {
+              // Align to right half of cell, but still full width
+              newX = cellCenter + refWidth / 2;
+            }
+            newY = newPos.row * (refHeight + refPadding) + refHeight / 2;
+          }
+
+          const updatedBrick: BrickData = {
+            ...brick,
+            col: newPos.col,
+            row: newPos.row,
+            halfSizeAlign: newHalfSizeAlign,
+            x: newX,
+            y: newY,
+          };
+
+          // Store movement alignment for full-size blocks
+          if (!brick.isHalfSize) {
+            (updatedBrick as any).movementAlign = movementAlign;
+          }
+
+          return updatedBrick;
+        });
+
+        // Update selectedBricks Set with new brick objects (keep selection)
+        // Match moved bricks to their new positions, or keep them if they didn't move
+        const newSelectedBricks = new Set<BrickData>();
+        originalPositions.forEach((originalPos, originalBrick) => {
+          if (canMove) {
+            // Movement was allowed - find brick at new position
+            const newPos = newPositions.get(originalBrick);
+            if (newPos) {
+              const foundBrick = updatedBricks.find((b) => {
+                if (b.col === undefined || b.row === undefined) return false;
+                if (b.col !== newPos.col || b.row !== newPos.row) return false;
+                if (originalBrick.isHalfSize) {
+                  return (
+                    b.isHalfSize && b.halfSizeAlign === newPos.halfSizeAlign
+                  );
+                }
+                return !b.isHalfSize;
+              });
+
+              if (foundBrick) {
+                newSelectedBricks.add(foundBrick);
+              }
+            }
+          } else {
+            // Movement was prevented - find brick at original position
+            const foundBrick = updatedBricks.find((b) => {
+              if (b.col === undefined || b.row === undefined) return false;
+              if (b.col !== originalPos.col || b.row !== originalPos.row)
+                return false;
+              if (originalPos.halfSizeAlign !== undefined) {
+                return (
+                  b.isHalfSize && b.halfSizeAlign === originalPos.halfSizeAlign
+                );
+              }
+              return !b.isHalfSize;
+            });
+
+            if (foundBrick) {
+              newSelectedBricks.add(foundBrick);
+            }
+          }
+        });
+
+        setSelectedBricks(newSelectedBricks);
+
+        return {
+          ...prev,
+          bricks: updatedBricks,
+        };
+      });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    brushMode,
+    selectedBricks,
+    setLevelData,
+    getBrickAtPosition,
+    brickWidth,
+    brickHeight,
+    padding,
+  ]);
 
   const handleCellClick = useCallback(
     (col: number, row: number, halfSlot?: "left" | "right") => {
@@ -561,7 +870,6 @@ export function LevelEditor({
               levelData={levelData}
             />
           )}
-
         </div>
 
         <div className="editor-main-area" style={{ position: "relative" }}>
@@ -574,18 +882,23 @@ export function LevelEditor({
             />
           )}
           <EditorGrid
-          levelData={levelData}
-          brickWidth={brickWidth}
-          brickHeight={brickHeight}
-          padding={padding}
-          getBrickAtPosition={getBrickAtPosition}
-          dragState={dragState}
-          isHalfSize={isHalfSize}
-          onCellClick={handleCellClick}
-          onCellMouseDown={handleCellMouseDown}
-          onCellMouseEnter={handleCellMouseEnter}
-          onCellRightClick={handleCellRightClick}
-        />
+            levelData={levelData}
+            brickWidth={brickWidth}
+            brickHeight={brickHeight}
+            padding={padding}
+            getBrickAtPosition={getBrickAtPosition}
+            dragState={dragState}
+            isHalfSize={isHalfSize}
+            brushMode={brushMode}
+            selectedBricks={selectedBricks}
+            selectionState={selectionState}
+            gridContainerRef={gridContainerRef}
+            onCellClick={handleCellClick}
+            onCellMouseDown={handleCellMouseDown}
+            onCellMouseEnter={handleCellMouseEnter}
+            onCellRightClick={handleCellRightClick}
+            onSelectionStart={handleSelectionStart}
+          />
         </div>
       </div>
 
