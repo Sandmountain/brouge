@@ -699,16 +699,6 @@ export function LevelEditor({
         halfSlotAlign
       );
 
-      console.log("[LevelEditor] Creating brick:", {
-        col,
-        row,
-        position: { x: newBrick.x, y: newBrick.y },
-        storedDimensions: { refWidth, refHeight, refPadding },
-        currentDimensions: { brickWidth, brickHeight, padding },
-        brick: newBrick,
-        portalPairId: selectedBrickType === "portal" ? portalPairId : undefined,
-      });
-
       setLevelData((prev) => {
         // For half-size blocks, only remove the brick in the same half
         // For full-size blocks, remove any brick at that position
@@ -882,12 +872,7 @@ export function LevelEditor({
             brickHeight: brickHeight,
             padding: padding,
           };
-          console.log("[LevelEditor] Testing level with data:", {
-            ...testData,
-            brickCount: testData.bricks.length,
-            firstBrick: testData.bricks[0],
-            dimensions: { brickWidth, brickHeight, padding },
-          });
+
           onTestLevel?.(testData);
         }}
         onSave={handleSave}

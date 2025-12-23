@@ -121,7 +121,7 @@ function calculateHalfBlockDistance(
 function calculateDamageByHalfBlockDistance(distance: number): number {
   // Use ceiling to determine ring (anything <= 1 is ring 1, <= 2 is ring 2, etc.)
   const ring = Math.ceil(distance);
-  
+
   if (ring === 1 || ring === 0) {
     return 5; // Ring 1: Directly adjacent half-blocks (distance <= 1)
   } else if (ring === 2) {
@@ -163,7 +163,6 @@ export function explodeTNT(
 ): void {
   const { scene, bricks, destroyBrick, updateMetalBrickAppearance } = context;
 
-
   if (brickData.col === undefined || brickData.row === undefined) {
     console.warn(
       "[TNT Explosion] TNT brick missing grid coordinates, using fallback pixel-based system"
@@ -202,20 +201,8 @@ export function explodeTNT(
   const tntIsHalfSize = brickData.isHalfSize || false;
   const tntHalfAlign = brickData.halfSizeAlign;
 
-  console.log("[TNT Explosion] TNT position:", {
-    col: tntCol,
-    row: tntRow,
-    isHalfSize: tntIsHalfSize,
-    halfSizeAlign: tntHalfAlign,
-  });
-
   const bricksToDamage = new Map<BrickSprite, number>();
 
-  console.log("[TNT Explosion] Total bricks in grid:", allBricks.length);
-  console.log("[TNT Explosion] Brick positions:", 
-    allBricks.map(b => `${b.brickData?.col},${b.brickData?.row}${b.brickData?.isHalfSize ? `-${b.brickData?.halfSizeAlign}` : ''}`).sort()
-  );
-  
   const damageByRing = new Map<number, { count: number; types: string[] }>();
 
   allBricks.forEach((brickSprite) => {
@@ -248,26 +235,9 @@ export function explodeTNT(
     const ring = Math.ceil(halfBlockDistance);
     const damage = calculateDamageByHalfBlockDistance(halfBlockDistance);
 
-    console.log("[TNT Explosion] Brick check:", {
-      type: brickSprite.brickData.type,
-      targetCol,
-      targetRow,
-      targetIsHalfSize,
-      targetHalfAlign,
-      health: brickSprite.brickData.health,
-      tntCol,
-      tntRow,
-      tntIsHalfSize,
-      tntHalfAlign,
-      halfBlockDistance,
-      ring,
-      damage,
-      willDestroy: damage >= brickSprite.brickData.health,
-    });
-
     if (damage > 0) {
       bricksToDamage.set(brickSprite, damage);
-      
+
       // Track damage by ring for summary
       if (!damageByRing.has(ring)) {
         damageByRing.set(ring, { count: 0, types: [] });
@@ -279,10 +249,6 @@ export function explodeTNT(
       }
     }
   });
-
-  console.log("[TNT Explosion] Damage summary by ring:", Object.fromEntries(damageByRing));
-  console.log("[TNT Explosion] Total bricks to damage:", bricksToDamage.size);
-
 
   // Create explosion effect
   const explosion = scene.add.circle(brick.x, brick.y, 100, 0xff0000, 0.5);
@@ -341,4 +307,3 @@ export function explodeTNT(
   // Destroy the TNT brick itself
   destroyBrick(brick as BrickSprite, brickData);
 }
-

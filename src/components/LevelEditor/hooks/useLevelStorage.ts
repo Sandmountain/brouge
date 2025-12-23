@@ -31,11 +31,6 @@ export const useLevelStorage = (
         initialData.height
       );
       if (cleanedBricks.length !== initialData.bricks.length) {
-        console.log(
-          `[LevelEditor] Cleaned ${
-            initialData.bricks.length - cleanedBricks.length
-          } invalid bricks on load`
-        );
         initialData.bricks = cleanedBricks;
       }
     }
@@ -74,4 +69,3 @@ export const useLevelStorage = (
 
   return { levelData, setLevelData };
 };
-

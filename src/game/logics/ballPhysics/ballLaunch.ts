@@ -16,7 +16,10 @@ export function launchBall(context: BallLaunchContext): void {
   const shieldX = shieldArc.x;
 
   // Normalize shield position relative to world bounds (0 = left edge, 1 = right edge)
-  const normalizedX = Math.max(0, Math.min(1, (shieldX - worldBounds.x) / worldBounds.width));
+  const normalizedX = Math.max(
+    0,
+    Math.min(1, (shieldX - worldBounds.x) / worldBounds.width)
+  );
 
   // Map to angle: 10 degrees (left edge, fires right) to 170 degrees (right edge, fires left)
   // Center (0.5) = 90 degrees (straight up)
@@ -27,22 +30,5 @@ export function launchBall(context: BallLaunchContext): void {
   const velocityX = Math.cos(angleRad) * ballSpeed;
   const velocityY = -Math.sin(angleRad) * ballSpeed; // Negative because Y increases downward
 
-  console.log(
-    "[Launch] Shield X:",
-    shieldX.toFixed(0),
-    "World bounds:",
-    worldBounds.x,
-    worldBounds.width,
-    "Normalized:",
-    normalizedX.toFixed(2),
-    "Angle:",
-    launchAngle.toFixed(1),
-    "deg",
-    "Velocity:",
-    velocityX.toFixed(0),
-    velocityY.toFixed(0)
-  );
-
   ball.setVelocity(velocityX, velocityY);
 }
-

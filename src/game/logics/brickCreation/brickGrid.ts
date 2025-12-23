@@ -36,8 +36,7 @@ function calculateBrickDimensions(
   const padding = brickWidth * paddingRatio;
   const brickHeight = brickWidth / 3; // Maintain 3:1 aspect ratio
 
-  const levelPixelWidth =
-    (gridWidth - 1) * (brickWidth + padding) + brickWidth;
+  const levelPixelWidth = (gridWidth - 1) * (brickWidth + padding) + brickWidth;
   const levelPixelHeight =
     (gridHeight - 1) * (brickHeight + padding) + brickHeight;
 
@@ -94,17 +93,9 @@ function recalculateBrickPosition(
 /**
  * Create bricks from level data
  */
-export function createBricksFromLevel(
-  context: BrickGridContext
-): number {
-  const {
-    scene,
-    levelData,
-    bricks,
-    breakableBrickCount,
-    shieldArc,
-    ball,
-  } = context;
+export function createBricksFromLevel(context: BrickGridContext): number {
+  const { scene, levelData, bricks, breakableBrickCount, shieldArc, ball } =
+    context;
 
   const gridWidth = levelData.width;
   const gridHeight = levelData.height;
@@ -124,17 +115,6 @@ export function createBricksFromLevel(
   const offsetX = 0;
   const offsetY = 0;
 
-  console.log("[BrickBreaker] Level scaled to fill width:", {
-    gridWidth,
-    gridHeight,
-    availableWidth,
-    availableHeight,
-    brickWidth,
-    brickHeight,
-    padding,
-    calculatedWidth: levelPixelWidth,
-  });
-
   // Process each brick in level data
   levelData.bricks.forEach((brickData, brickIndex) => {
     let col: number;
@@ -146,9 +126,7 @@ export function createBricksFromLevel(
       row = brickData.row;
     } else {
       // Migrate old bricks: calculate grid coordinates from pixel positions
-      col = Math.round(
-        (brickData.x - brickWidth / 2) / (brickWidth + padding)
-      );
+      col = Math.round((brickData.x - brickWidth / 2) / (brickWidth + padding));
       row = Math.round(
         (brickData.y - brickHeight / 2) / (brickHeight + padding)
       );
@@ -220,9 +198,7 @@ export function createBricksFromLevel(
 /**
  * Create default level bricks
  */
-export function createDefaultLevel(
-  context: BrickGridContext
-): number {
+export function createDefaultLevel(context: BrickGridContext): number {
   const { scene, bricks, breakableBrickCount } = context;
 
   const rows = 8;
@@ -261,7 +237,12 @@ export function createDefaultLevel(
         type: "default",
       };
 
-      const brick = createBrickFromData(scene, brickData, brickWidth, brickHeight);
+      const brick = createBrickFromData(
+        scene,
+        brickData,
+        brickWidth,
+        brickHeight
+      );
       if (brick && brick.brickData) {
         bricks.add(brick);
         if (
@@ -276,4 +257,3 @@ export function createDefaultLevel(
 
   return breakableBrickCount.value;
 }
-
