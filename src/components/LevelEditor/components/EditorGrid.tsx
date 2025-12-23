@@ -1,6 +1,7 @@
 import { BrickData, BrickType, LevelData } from "../../../game/types";
 import { Brick } from "../../../bricks/Brick";
 import { isFuseType } from "../utils/fuseDetection";
+import { BrushMode } from "./EditorToolbar";
 
 interface EditorGridProps {
   levelData: LevelData;
@@ -20,6 +21,7 @@ interface EditorGridProps {
   isHalfSize: boolean;
   brushMode: "paint" | "erase" | "select";
   selectedBricks: Set<BrickData>;
+  selectedBrick: BrickData | null;
   selectionState: {
     isSelecting: boolean;
     startX: number;
@@ -64,6 +66,7 @@ export function EditorGrid({
   isHalfSize,
   brushMode,
   selectedBricks,
+  selectedBrick,
   selectionState,
   gridContainerRef,
   onCellClick,
@@ -225,6 +228,73 @@ export function EditorGrid({
               );
             })}
 
+          {/* Single selected brick highlight */}
+          {selectedBrick &&
+            selectedBrick.col !== undefined &&
+            selectedBrick.row !== undefined &&
+            (() => {
+              // Use stored dimensions or current dimensions
+              const refWidth = levelData.brickWidth || brickWidth;
+              const refHeight = levelData.brickHeight || brickHeight;
+              const refPadding = levelData.padding || padding;
+              const gridPadding = 20; // Grid container padding
+
+              let highlightLeft: number;
+              let highlightTop: number;
+              let highlightWidth: number;
+              let highlightHeight: number;
+
+              if (selectedBrick.isHalfSize && selectedBrick.halfSizeAlign) {
+                // Half-size block - calculate exact position
+                const halfBlockGap = refPadding;
+                const halfWidth = (refWidth - halfBlockGap) / 2;
+                const cellLeft = selectedBrick.col * (refWidth + refPadding);
+                const cellTop = selectedBrick.row * (refHeight + refPadding);
+
+                if (selectedBrick.halfSizeAlign === "left") {
+                  highlightLeft = gridPadding + cellLeft;
+                } else {
+                  // Right half
+                  const cellCenter = cellLeft + refWidth / 2;
+                  highlightLeft = gridPadding + cellCenter + halfBlockGap / 2;
+                }
+                highlightTop = gridPadding + cellTop;
+                highlightWidth = halfWidth;
+                highlightHeight = refHeight;
+              } else {
+                // Full-size block - centered in cell
+                const cellLeft = selectedBrick.col * (refWidth + refPadding);
+                const cellTop = selectedBrick.row * (refHeight + refPadding);
+                highlightLeft = gridPadding + cellLeft;
+                highlightTop = gridPadding + cellTop;
+                highlightWidth = refWidth;
+                highlightHeight = refHeight;
+              }
+
+              return (
+                <div
+                  key={`selected-${selectedBrick.col}-${selectedBrick.row}-${
+                    selectedBrick.isHalfSize
+                      ? selectedBrick.halfSizeAlign
+                      : "full"
+                  }`}
+                  className="selected-brick-highlight"
+                  style={{
+                    position: "absolute",
+                    left: `${highlightLeft}px`,
+                    top: `${highlightTop}px`,
+                    width: `${highlightWidth - 6}px`,
+                    height: `${highlightHeight - 6}px`,
+                    border: "3px solid rgba(100, 150, 255, 1)",
+                    backgroundColor: "rgba(100, 150, 255, 0.3)",
+                    pointerEvents: "none",
+                    zIndex: 998,
+                    boxShadow: "0 0 8px rgba(100, 150, 255, 0.6)",
+                  }}
+                />
+              );
+            })()}
+
           {Array.from({ length: levelData.height }).map((_, row) =>
             Array.from({ length: levelData.width }).map((_, col) => {
               // Grid is always built on half-size foundation
@@ -380,32 +450,12 @@ export function EditorGrid({
                     }}
                     onClick={() => {
                       if (!dragState?.isDragging) {
-                        onCellClick(col, row, isHalfSize ? "left" : undefined);
+                        onCellClick(col, row, "left");
                       }
                     }}
-                    onMouseDown={(e) =>
-                      onCellMouseDown(
-                        e,
-                        col,
-                        row,
-                        isHalfSize ? "left" : undefined
-                      )
-                    }
-                    onMouseEnter={() =>
-                      onCellMouseEnter(
-                        col,
-                        row,
-                        isHalfSize ? "left" : undefined
-                      )
-                    }
-                    onContextMenu={(e) =>
-                      onCellRightClick(
-                        e,
-                        col,
-                        row,
-                        isHalfSize ? "left" : undefined
-                      )
-                    }
+                    onMouseDown={(e) => onCellMouseDown(e, col, row, "left")}
+                    onMouseEnter={() => onCellMouseEnter(col, row, "left")}
+                    onContextMenu={(e) => onCellRightClick(e, col, row, "left")}
                   >
                     {!isFullSizeBlock && leftBrick && (
                       <Brick
@@ -462,31 +512,13 @@ export function EditorGrid({
                     }}
                     onClick={() => {
                       if (!dragState?.isDragging) {
-                        onCellClick(col, row, isHalfSize ? "right" : undefined);
+                        onCellClick(col, row, "right");
                       }
                     }}
-                    onMouseDown={(e) =>
-                      onCellMouseDown(
-                        e,
-                        col,
-                        row,
-                        isHalfSize ? "right" : undefined
-                      )
-                    }
-                    onMouseEnter={() =>
-                      onCellMouseEnter(
-                        col,
-                        row,
-                        isHalfSize ? "right" : undefined
-                      )
-                    }
+                    onMouseDown={(e) => onCellMouseDown(e, col, row, "right")}
+                    onMouseEnter={() => onCellMouseEnter(col, row, "right")}
                     onContextMenu={(e) =>
-                      onCellRightClick(
-                        e,
-                        col,
-                        row,
-                        isHalfSize ? "right" : undefined
-                      )
+                      onCellRightClick(e, col, row, "right")
                     }
                   >
                     {!isFullSizeBlock && rightBrick && (

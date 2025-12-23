@@ -42,6 +42,7 @@ export function LevelEditor({
   const [selectedColor, setSelectedColor] = useState<number>(DEFAULT_COLORS[0]);
   const [selectedBrick, setSelectedBrick] = useState<BrickData | null>(null);
   const [brushMode, setBrushMode] = useState<BrushMode>("paint");
+  const rightClickJustHappened = useRef(false);
   const [isFuseMode, setIsFuseMode] = useState(false);
   const [isHalfSize, setIsHalfSize] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -442,9 +443,12 @@ export function LevelEditor({
     gridContainerRef
   );
 
-  // Handle Delete key to remove selected bricks
+  // Handle Delete key to remove selected bricks (multi-select or single select)
   useEffect(() => {
-    if (brushMode !== "select" || selectedBricks.size === 0) return;
+    const hasMultiSelect = brushMode === "select" && selectedBricks.size > 0;
+    const hasSingleSelect = selectedBrick !== null;
+
+    if (!hasMultiSelect && !hasSingleSelect) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Delete" && e.key !== "Backspace") {
@@ -456,16 +460,28 @@ export function LevelEditor({
       setLevelData((prev) => {
         // Collect IDs of portal bricks to remove pairs
         const portalIdsToRemove = new Set<string>();
-        selectedBricks.forEach((brick) => {
-          if (brick.type === "portal" && brick.id) {
-            portalIdsToRemove.add(brick.id);
+        const bricksToRemove = new Set<BrickData>();
+
+        if (hasMultiSelect) {
+          // Multi-select: remove all selected bricks
+          selectedBricks.forEach((brick) => {
+            bricksToRemove.add(brick);
+            if (brick.type === "portal" && brick.id) {
+              portalIdsToRemove.add(brick.id);
+            }
+          });
+        } else if (hasSingleSelect && selectedBrick) {
+          // Single select: remove the selected brick
+          bricksToRemove.add(selectedBrick);
+          if (selectedBrick.type === "portal" && selectedBrick.id) {
+            portalIdsToRemove.add(selectedBrick.id);
           }
-        });
+        }
 
         // Remove selected bricks and their portal pairs
         const filteredBricks = prev.bricks.filter(
           (brick) =>
-            !selectedBricks.has(brick) &&
+            !bricksToRemove.has(brick) &&
             !(brick.id && portalIdsToRemove.has(brick.id))
         );
 
@@ -475,13 +491,24 @@ export function LevelEditor({
         };
       });
 
-      // Clear selection after deletion
-      setSelectedBricks(new Set());
+      // Clear selections after deletion
+      if (hasMultiSelect) {
+        setSelectedBricks(new Set());
+      }
+      if (hasSingleSelect) {
+        setSelectedBrick(null);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [brushMode, selectedBricks, setLevelData, setSelectedBricks]);
+  }, [
+    brushMode,
+    selectedBricks,
+    selectedBrick,
+    setLevelData,
+    setSelectedBricks,
+  ]);
 
   // Handle arrow key movement for selected bricks
   useEffect(() => {
@@ -782,6 +809,12 @@ export function LevelEditor({
 
   const handleCellClick = useCallback(
     (col: number, row: number, halfSlot?: "left" | "right") => {
+      // Skip if a right-click just happened (to prevent recreating deleted blocks)
+      if (rightClickJustHappened.current) {
+        rightClickJustHappened.current = false;
+        return;
+      }
+
       // Don't handle clicks in fuse mode - fuse mode uses drag
       if (isFuseMode) {
         return;
@@ -792,46 +825,84 @@ export function LevelEditor({
       if (brushMode === "erase") {
         if (!dragState?.isDragging) {
           // Single click erase (not drag)
-          if (isHalfSize && halfSlot) {
-            setLevelData((prev) => ({
-              ...prev,
-              bricks: prev.bricks.filter(
-                (b) =>
-                  !(
-                    b.col === col &&
-                    b.row === row &&
-                    b.isHalfSize &&
-                    b.halfSizeAlign === halfSlot
-                  )
-              ),
-            }));
-          } else {
+          // Smart erase: check for full block first, then half blocks
+          const fullBlock = getBrickAtPosition(col, row);
+          if (fullBlock && !fullBlock.isHalfSize) {
+            // Erase full-size block
             handleEraseBrick(col, row);
+          } else if (halfSlot !== undefined) {
+            // Erase half block in clicked half
+            const halfBlock = getBrickAtPosition(col, row, halfSlot);
+            if (halfBlock) {
+              setLevelData((prev) => ({
+                ...prev,
+                bricks: prev.bricks.filter(
+                  (b) =>
+                    !(
+                      b.col === col &&
+                      b.row === row &&
+                      b.isHalfSize &&
+                      b.halfSizeAlign === halfSlot
+                    )
+                ),
+              }));
+            }
           }
         }
         return;
       }
 
-      // Check for existing brick in the specific half we're trying to place
-      if (isHalfSize && halfSlot !== undefined) {
-        // Check for existing brick in this specific half
-        const existingBrickInHalf = getBrickAtPosition(col, row, halfSlot);
-        if (existingBrickInHalf) {
-          setSelectedBrick(existingBrickInHalf);
+      // Smart brick detection: always check for both full and half blocks
+      // Priority: 1) Full-size block, 2) Half block in clicked half, 3) Half block in other half
+
+      // First, check for a full-size block (takes priority)
+      const fullSizeBlock = getBrickAtPosition(col, row);
+      if (fullSizeBlock && !fullSizeBlock.isHalfSize) {
+        setSelectedBrick(fullSizeBlock);
+        // Update selected brick type and color to match the selected brick
+        if (fullSizeBlock.type === "default") {
+          setSelectedBrickType("default");
+          setSelectedColor(fullSizeBlock.color);
+        } else if (fullSizeBlock.type === "fuse-horizontal") {
+          setIsFuseMode(true);
+        } else {
+          setSelectedBrickType(fullSizeBlock.type);
+        }
+        return;
+      }
+
+      // If no full-size block, check for half blocks
+      if (halfSlot !== undefined) {
+        // Check for brick in the clicked half first
+        const brickInClickedHalf = getBrickAtPosition(col, row, halfSlot);
+        if (brickInClickedHalf) {
+          setSelectedBrick(brickInClickedHalf);
+          // Update selected brick type and color to match the selected brick
+          if (brickInClickedHalf.type === "default") {
+            setSelectedBrickType("default");
+            setSelectedColor(brickInClickedHalf.color);
+          } else if (brickInClickedHalf.type === "fuse-horizontal") {
+            setIsFuseMode(true);
+          } else {
+            setSelectedBrickType(brickInClickedHalf.type);
+          }
           return;
         }
 
-        // Also check if there's a full-size block that would prevent placement
-        const fullSizeBlock = getBrickAtPosition(col, row);
-        if (fullSizeBlock && !fullSizeBlock.isHalfSize) {
-          // Can't place half-size block where full-size block exists
-          return;
-        }
-      } else {
-        // Full-size mode - check for any brick at this position
-        const existingBrick = getBrickAtPosition(col, row);
-        if (existingBrick) {
-          setSelectedBrick(existingBrick);
+        // As fallback, check the other half
+        const otherHalf = halfSlot === "left" ? "right" : "left";
+        const brickInOtherHalf = getBrickAtPosition(col, row, otherHalf);
+        if (brickInOtherHalf) {
+          setSelectedBrick(brickInOtherHalf);
+          // Update selected brick type and color to match the selected brick
+          if (brickInOtherHalf.type === "default") {
+            setSelectedBrickType("default");
+            setSelectedColor(brickInOtherHalf.color);
+          } else if (brickInOtherHalf.type === "fuse-horizontal") {
+            setIsFuseMode(true);
+          } else {
+            setSelectedBrickType(brickInOtherHalf.type);
+          }
           return;
         }
       }
@@ -916,24 +987,41 @@ export function LevelEditor({
       halfSlot?: "left" | "right"
     ) => {
       e.preventDefault(); // Prevent context menu
-      if (isHalfSize && halfSlot) {
-        setLevelData((prev) => ({
-          ...prev,
-          bricks: prev.bricks.filter(
-            (b) =>
-              !(
-                b.col === col &&
-                b.row === row &&
-                b.isHalfSize &&
-                b.halfSizeAlign === halfSlot
-              )
-          ),
-        }));
-      } else {
+      e.stopPropagation(); // Prevent onClick from firing
+
+      // Mark that a right-click just happened to prevent onClick from placing a block
+      rightClickJustHappened.current = true;
+
+      // Smart erase: check for full block first, then half blocks
+      const fullBlock = getBrickAtPosition(col, row);
+      if (fullBlock && !fullBlock.isHalfSize) {
+        // Erase full-size block
         handleEraseBrick(col, row);
+      } else if (halfSlot !== undefined) {
+        // Erase half block in clicked half
+        const halfBlock = getBrickAtPosition(col, row, halfSlot);
+        if (halfBlock) {
+          setLevelData((prev) => ({
+            ...prev,
+            bricks: prev.bricks.filter(
+              (b) =>
+                !(
+                  b.col === col &&
+                  b.row === row &&
+                  b.isHalfSize &&
+                  b.halfSizeAlign === halfSlot
+                )
+            ),
+          }));
+        }
       }
+
+      // Reset the flag after a short delay to allow normal clicks to work again
+      setTimeout(() => {
+        rightClickJustHappened.current = false;
+      }, 100);
     },
-    [handleEraseBrick, isHalfSize, setLevelData]
+    [handleEraseBrick, getBrickAtPosition, setLevelData]
   );
 
   const handleCellMouseDown = useCallback(
@@ -1209,6 +1297,7 @@ export function LevelEditor({
               isHalfSize={isHalfSize}
               brushMode={brushMode}
               selectedBricks={selectedBricks}
+              selectedBrick={selectedBrick}
               selectionState={selectionState}
               gridContainerRef={gridContainerRef}
               onCellClick={handleCellClick}
