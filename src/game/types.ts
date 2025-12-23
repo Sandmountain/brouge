@@ -30,6 +30,7 @@ export interface BrickData {
   isHalfSize?: boolean; // If true, brick takes up half the width of a grid cell
   halfSizeAlign?: 'left' | 'right'; // Alignment for half-size blocks (default: 'left')
   isOneWay?: boolean; // For portal bricks: if true, only receives teleports but doesn't send
+  isRequired?: boolean; // If true, brick must be broken to complete the level (default: true)
 }
 
 export interface LevelData {

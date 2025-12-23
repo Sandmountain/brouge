@@ -79,6 +79,22 @@ export const createBrickData = (
   const health = getBrickHealth(type);
   const color = getBrickColor(type, selectedColor);
 
+  // Set default isRequired based on brick type
+  let isRequired: boolean;
+  if (type === "unbreakable" || type === "portal") {
+    // Unbreakable blocks are never required (can't be broken)
+    isRequired = false;
+  } else if (type === "metal" || type === "gold" || type === "boost" || type === "chaos") {
+    // Optional blocks
+    isRequired = false;
+  } else if (type.startsWith("fuse-") || type === "tnt" || type === "default") {
+    // Required blocks
+    isRequired = true;
+  } else {
+    // Default to required for any other types
+    isRequired = true;
+  }
+
   return {
     x,
     y,
@@ -93,6 +109,7 @@ export const createBrickData = (
     id: type === "portal" ? portalId : undefined,
     isHalfSize,
     halfSizeAlign: isHalfSize ? halfSizeAlign : undefined,
+    isRequired,
   };
 };
 

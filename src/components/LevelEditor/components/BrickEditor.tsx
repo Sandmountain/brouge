@@ -101,6 +101,18 @@ export function BrickEditor({
             }
           />
         </label>
+        {selectedBrick.type !== "unbreakable" && selectedBrick.type !== "portal" && (
+          <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              type="checkbox"
+              checked={selectedBrick.isRequired !== false}
+              onChange={(e) =>
+                onUpdate(selectedBrick, { isRequired: e.target.checked })
+              }
+            />
+            <span>Required to break</span>
+          </label>
+        )}
       </div>
     </div>
   );
