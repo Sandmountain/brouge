@@ -54,9 +54,13 @@ export class BrickBreaker extends Scene {
 
   private ballSpeed: number = 400;
   private paddleSpeed: number = 500;
+  private paddleAcceleration: number = 3000; // pixels per second squared
+  private paddleDeceleration: number = 2500; // pixels per second squared
+  private paddleVelocity: number = 0; // current velocity in pixels per second
   private paddleWidth: number = 120;
   private ballLaunched: { value: boolean } = { value: false };
   private prevBallVelocity: { x: number; y: number } = { x: 0, y: 0 };
+  private cachedWorldBounds?: Phaser.Geom.Rectangle;
   private shieldArc!: Phaser.Physics.Arcade.Sprite; // Shield arc that bounces the ball
   private shieldGraphics!: Phaser.GameObjects.Graphics; // Graphics object for drawing the shield
   private deathZone!: Phaser.GameObjects.Zone;
@@ -294,17 +298,23 @@ export class BrickBreaker extends Scene {
 
   update() {
     // Store ball velocity before collisions (for portal teleportation)
-    if (this.ball && this.ball.body) {
+    // Only update if ball exists and has velocity (optimization)
+    if (this.ball?.body) {
       const ballBody = this.ball.body as Phaser.Physics.Arcade.Body;
-      this.prevBallVelocity.x = ballBody.velocity.x;
-      this.prevBallVelocity.y = ballBody.velocity.y;
+      if (ballBody.velocity.x !== 0 || ballBody.velocity.y !== 0) {
+        this.prevBallVelocity.x = ballBody.velocity.x;
+        this.prevBallVelocity.y = ballBody.velocity.y;
+      }
     }
 
-    // Shield arc movement (left/right)
-    // Use direct position updates since shield is immovable
-    const worldBounds = this.physics.world.bounds;
+    // Shield arc movement (left/right) with acceleration
+    // Cache world bounds (they don't change during gameplay)
+    if (!this.cachedWorldBounds) {
+      this.cachedWorldBounds = this.physics.world.bounds;
+    }
+    const worldBounds = this.cachedWorldBounds;
     const deltaTime = this.game.loop.delta;
-    const moveDistance = (this.paddleSpeed * deltaTime) / 1000; // Convert to pixels per frame
+    const deltaTimeSeconds = deltaTime / 1000;
 
     // Check Phaser keyboard first, then fallback to native keyState
     // Optimize: cache keyState reference
@@ -316,28 +326,53 @@ export class BrickBreaker extends Scene {
 
     // Optimize: reduce redundant checks by checking Phaser keys first (faster)
     const leftPressed =
-      (this.cursors?.left?.isDown) ||
-      (this.wasdKeys?.A?.isDown) ||
+      this.cursors?.left?.isDown ||
+      this.wasdKeys?.A?.isDown ||
       keyState["a"] ||
       keyState["arrowleft"] ||
       keyState["keya"];
     const rightPressed =
-      (this.cursors?.right?.isDown) ||
-      (this.wasdKeys?.D?.isDown) ||
+      this.cursors?.right?.isDown ||
+      this.wasdKeys?.D?.isDown ||
       keyState["d"] ||
       keyState["arrowright"] ||
       keyState["keyd"];
 
+    // Apply acceleration or deceleration
     if (leftPressed) {
+      // Accelerate left (negative velocity)
+      this.paddleVelocity -= this.paddleAcceleration * deltaTimeSeconds;
+      this.paddleVelocity = Math.max(-this.paddleSpeed, this.paddleVelocity);
+    } else if (rightPressed) {
+      // Accelerate right (positive velocity)
+      this.paddleVelocity += this.paddleAcceleration * deltaTimeSeconds;
+      this.paddleVelocity = Math.min(this.paddleSpeed, this.paddleVelocity);
+    } else {
+      // Decelerate when no keys pressed (only if there's velocity to decelerate)
+      if (Math.abs(this.paddleVelocity) > 0.1) {
+        if (this.paddleVelocity > 0) {
+          this.paddleVelocity -= this.paddleDeceleration * deltaTimeSeconds;
+          this.paddleVelocity = Math.max(0, this.paddleVelocity);
+        } else {
+          this.paddleVelocity += this.paddleDeceleration * deltaTimeSeconds;
+          this.paddleVelocity = Math.min(0, this.paddleVelocity);
+        }
+      } else {
+        // Snap to zero if velocity is very small
+        this.paddleVelocity = 0;
+      }
+    }
+
+    // Apply velocity to position
+    const moveDistance = this.paddleVelocity * deltaTimeSeconds;
+    if (Math.abs(moveDistance) > 0.1) {
+      // Only move if velocity is significant
       const newX = Math.max(
         worldBounds.x + this.paddleWidth / 2,
-        this.shieldArc.x - moveDistance
-      );
-      this.shieldArc.setX(newX);
-    } else if (rightPressed) {
-      const newX = Math.min(
-        worldBounds.right - this.paddleWidth / 2,
-        this.shieldArc.x + moveDistance
+        Math.min(
+          worldBounds.right - this.paddleWidth / 2,
+          this.shieldArc.x + moveDistance
+        )
       );
       this.shieldArc.setX(newX);
     }
@@ -356,16 +391,18 @@ export class BrickBreaker extends Scene {
     });
 
     // Launch ball with spacebar or W
-    // Optimize: use optional chaining and check Phaser keys first
-    const spacePressed =
-      (this.cursors?.space?.isDown) ||
-      (this.wasdKeys?.W?.isDown) ||
-      keyState[" "] ||
-      keyState["space"] ||
-      keyState["w"] ||
-      keyState["keyw"];
-    if (!this.ballLaunched.value && spacePressed) {
-      this.launchBall();
+    // Only check if ball hasn't been launched yet (optimization)
+    if (!this.ballLaunched.value) {
+      const spacePressed =
+        this.cursors?.space?.isDown ||
+        this.wasdKeys?.W?.isDown ||
+        keyState[" "] ||
+        keyState["space"] ||
+        keyState["w"] ||
+        keyState["keyw"];
+      if (spacePressed) {
+        this.launchBall();
+      }
     }
   }
 

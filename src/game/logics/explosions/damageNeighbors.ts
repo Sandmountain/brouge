@@ -67,10 +67,12 @@ export function damageNeighbors(
         // Use cached query or query once
         let healthBadge = (element as any).__cachedHealthBadge;
         if (!healthBadge && healthBadge !== null) {
-          healthBadge = element.querySelector(".health-badge") as HTMLElement | null;
+          healthBadge = element.querySelector(
+            ".health-badge"
+          ) as HTMLElement | null;
           (element as any).__cachedHealthBadge = healthBadge;
         }
-        
+
         if (
           healthBadge &&
           neighborBrick.brickData.health > 1 &&
@@ -110,4 +112,3 @@ export function damageNeighbors(
     }
   });
 }
-
