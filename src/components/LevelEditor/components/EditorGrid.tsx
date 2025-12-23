@@ -145,6 +145,22 @@ export function EditorGrid({
                     overflow: "visible", // Allow full-size blocks to overflow
                   }}
                 >
+                  {/* Grid coordinate label */}
+                  {/* <div
+                    style={{
+                      position: "absolute",
+                      top: "2px",
+                      left: "2px",
+                      fontSize: "10px",
+                      color: "rgba(255, 0, 0, 0.5)",
+                      zIndex: 1000,
+                      pointerEvents: "none",
+                      fontFamily: "monospace",
+                      lineHeight: "1",
+                    }}
+                  >
+                    {col},{row}
+                  </div> */}
                   {/* Render full-size block at grid-cell level to span both halves */}
                   {isFullSizeBlock && (
                     <div

@@ -15,107 +15,131 @@ interface TNTExplosionContext {
 }
 
 /**
- * Calculate half-block distance between two half-positions
+ * Calculate half-block distance between TNT and target brick
+ * Returns the minimum distance in half-blocks
  */
 function calculateHalfBlockDistance(
-  tntHalf: { col: number; half: "left" | "right" },
-  targetHalf: { col: number; half: "left" | "right" },
+  tntCol: number,
   tntRow: number,
-  targetRow: number
+  tntIsHalfSize: boolean,
+  tntHalfAlign: "left" | "right" | undefined,
+  targetCol: number,
+  targetRow: number,
+  targetIsHalfSize: boolean,
+  targetHalfAlign: "left" | "right" | undefined
 ): number {
-  const colDiff = Math.abs(tntHalf.col - targetHalf.col);
-  const rowDiff = Math.abs(tntRow - targetRow);
-
-  if (colDiff === 0 && rowDiff === 0) {
-    // Same cell
-    if (tntHalf.half !== targetHalf.half) {
-      return 0.5; // Adjacent halves
-    }
-    return 0; // Same half (shouldn't happen)
-  }
-
-  // Calculate column distance in half-blocks
-  let colHalfDist: number;
-  if (colDiff === 0) {
-    colHalfDist = 0;
-  } else if (colDiff === 1) {
-    // Adjacent columns
-    const areTouching =
-      (tntHalf.col > targetHalf.col &&
-        tntHalf.half === "left" &&
-        targetHalf.half === "right") ||
-      (tntHalf.col < targetHalf.col &&
-        tntHalf.half === "right" &&
-        targetHalf.half === "left");
-
-    if (areTouching) {
-      colHalfDist = 0.5; // Touching halves
-    } else {
-      colHalfDist = 1.5; // Opposite sides
-    }
+  // Get all TNT half-positions
+  const tntHalves: Array<{ col: number; half: "left" | "right" }> = [];
+  if (tntIsHalfSize && tntHalfAlign) {
+    tntHalves.push({ col: tntCol, half: tntHalfAlign });
   } else {
-    // Non-adjacent columns
-    const baseColDist = colDiff * 2;
-    const areAdjacent =
-      (tntHalf.col > targetHalf.col &&
-        tntHalf.half === "left" &&
-        targetHalf.half === "right") ||
-      (tntHalf.col < targetHalf.col &&
-        tntHalf.half === "right" &&
-        targetHalf.half === "left");
+    // Full-size TNT occupies both halves
+    tntHalves.push({ col: tntCol, half: "left" });
+    tntHalves.push({ col: tntCol, half: "right" });
+  }
 
-    if (areAdjacent) {
-      colHalfDist = baseColDist - 1;
-    } else {
-      colHalfDist = baseColDist;
+  // Get all target half-positions
+  const targetHalves: Array<{ col: number; half: "left" | "right" }> = [];
+  if (targetIsHalfSize && targetHalfAlign) {
+    targetHalves.push({ col: targetCol, half: targetHalfAlign });
+  } else {
+    // Full-size target occupies both halves
+    targetHalves.push({ col: targetCol, half: "left" });
+    targetHalves.push({ col: targetCol, half: "right" });
+  }
+
+  // Calculate minimum distance between any TNT half and any target half
+  let minDistance = Infinity;
+
+  for (const tntHalf of tntHalves) {
+    for (const targetHalf of targetHalves) {
+      const colDiff = Math.abs(tntHalf.col - targetHalf.col);
+      const rowDiff = Math.abs(tntRow - targetRow);
+
+      // Calculate half-block distance
+      let halfBlockDistance: number;
+
+      if (colDiff === 0 && rowDiff === 0) {
+        // Same cell
+        if (tntHalf.half !== targetHalf.half) {
+          halfBlockDistance = 0.5; // Adjacent halves in same cell
+        } else {
+          halfBlockDistance = 0; // Same half (shouldn't happen for TNT)
+        }
+      } else {
+        // Different cells
+        // Column distance in half-blocks
+        let colHalfDist: number;
+        if (colDiff === 0) {
+          colHalfDist = 0;
+        } else if (colDiff === 1) {
+          // Adjacent columns
+          const areTouching =
+            (tntHalf.col > targetHalf.col &&
+              tntHalf.half === "left" &&
+              targetHalf.half === "right") ||
+            (tntHalf.col < targetHalf.col &&
+              tntHalf.half === "right" &&
+              targetHalf.half === "left");
+          colHalfDist = areTouching ? 0.5 : 1.5; // Touching or opposite sides
+        } else {
+          // Non-adjacent columns
+          const baseColDist = (colDiff - 1) * 2; // Distance between cells (excluding the cells themselves)
+          const areAdjacent =
+            (tntHalf.col > targetHalf.col &&
+              tntHalf.half === "left" &&
+              targetHalf.half === "right") ||
+            (tntHalf.col < targetHalf.col &&
+              tntHalf.half === "right" &&
+              targetHalf.half === "left");
+          // If the outer halves are touching, subtract 1 half-block
+          colHalfDist = areAdjacent ? baseColDist + 0.5 : baseColDist + 1.5;
+        }
+
+        // Row distance in half-block units (gap between rows = 1 half-block unit)
+        // Same row = 0, adjacent row = 1, etc.
+        const rowHalfDist = rowDiff;
+
+        // Chebyshev distance in half-blocks
+        halfBlockDistance = Math.max(colHalfDist, rowHalfDist);
+      }
+
+      minDistance = Math.min(minDistance, halfBlockDistance);
     }
   }
 
-  // Calculate row distance (each row = 2 half-blocks)
-  const rowHalfDist = rowDiff * 2;
-
-  // Manhattan distance
-  return colHalfDist + rowHalfDist;
+  return minDistance;
 }
 
 /**
- * Calculate damage based on half-block distance
+ * Calculate damage based on half-block distance (ring)
+ * Ring 1 (<= 1 half-block): 5 damage - directly adjacent half-blocks
+ * Ring 2 (<= 2 half-blocks): 5 damage - one half-block away
+ * Ring 3 (<= 3 half-blocks): 1 damage - two half-blocks away
+ * Ring 4+: 0 damage - out of range
  */
-function calculateDamageByDistance(distance: number): number {
-  if (distance <= 2.5) {
-    return 5; // Ring 1: All 8 directly adjacent cells
-  } else if (distance <= 4.5) {
-    return 3; // Ring 2: One cell away
-  } else if (distance <= 6.5) {
-    return 1; // Ring 3: Two cells away
+function calculateDamageByHalfBlockDistance(distance: number): number {
+  // Use ceiling to determine ring (anything <= 1 is ring 1, <= 2 is ring 2, etc.)
+  const ring = Math.ceil(distance);
+  
+  if (ring === 1 || ring === 0) {
+    return 5; // Ring 1: Directly adjacent half-blocks (distance <= 1)
+  } else if (ring === 2) {
+    return 5; // Ring 2: One half-block away (distance <= 2)
+  } else if (ring === 3) {
+    return 1; // Ring 3: Two half-blocks away (distance <= 3)
   }
-  return 0;
+  return 0; // Out of range
 }
 
 /**
- * Get half-block positions for a brick
+ * Get all bricks with grid coordinates
+ * Returns an array instead of a map to handle multiple half-blocks in the same cell
  */
-function getHalfPositions(
-  col: number,
-  isHalfSize: boolean,
-  halfAlign: "left" | "right"
-): Array<{ col: number; half: "left" | "right" }> {
-  if (isHalfSize) {
-    return [{ col, half: halfAlign }];
-  }
-  return [
-    { col, half: "left" },
-    { col, half: "right" },
-  ];
-}
-
-/**
- * Build a grid map from bricks for efficient lookup
- */
-function buildGridMap(
+function getAllBricksWithCoords(
   bricks: Phaser.Physics.Arcade.StaticGroup
-): Map<string, BrickSprite> {
-  const gridMap = new Map<string, BrickSprite>();
+): BrickSprite[] {
+  const result: BrickSprite[] = [];
   bricks.children.entries.forEach((b) => {
     const brickSprite = b as BrickSprite;
     if (
@@ -123,11 +147,10 @@ function buildGridMap(
       brickSprite.brickData.col !== undefined &&
       brickSprite.brickData.row !== undefined
     ) {
-      const key = `${brickSprite.brickData.col},${brickSprite.brickData.row}`;
-      gridMap.set(key, brickSprite);
+      result.push(brickSprite);
     }
   });
-  return gridMap;
+  return result;
 }
 
 /**
@@ -140,13 +163,6 @@ export function explodeTNT(
 ): void {
   const { scene, bricks, destroyBrick, updateMetalBrickAppearance } = context;
 
-  console.log("[TNT Explosion] Starting explosion at:", {
-    col: brickData.col,
-    row: brickData.row,
-    isHalfSize: brickData.isHalfSize,
-    halfSizeAlign: brickData.halfSizeAlign,
-    position: { x: brick.x, y: brick.y },
-  });
 
   if (brickData.col === undefined || brickData.row === undefined) {
     console.warn(
@@ -180,121 +196,93 @@ export function explodeTNT(
     return;
   }
 
-  const gridMap = buildGridMap(bricks);
+  const allBricks = getAllBricksWithCoords(bricks);
   const tntCol = brickData.col;
   const tntRow = brickData.row;
   const tntIsHalfSize = brickData.isHalfSize || false;
-  const tntHalfAlign = brickData.halfSizeAlign || "left";
+  const tntHalfAlign = brickData.halfSizeAlign;
 
-  console.log("[TNT Explosion] TNT properties:", {
-    tntCol,
-    tntRow,
-    tntIsHalfSize,
-    tntHalfAlign,
+  console.log("[TNT Explosion] TNT position:", {
+    col: tntCol,
+    row: tntRow,
+    isHalfSize: tntIsHalfSize,
+    halfSizeAlign: tntHalfAlign,
   });
 
-  const tntHalfPositions = getHalfPositions(tntCol, tntIsHalfSize, tntHalfAlign);
   const bricksToDamage = new Map<BrickSprite, number>();
 
-  console.log("[TNT Explosion] Checking", gridMap.size, "bricks in grid");
+  console.log("[TNT Explosion] Total bricks in grid:", allBricks.length);
+  console.log("[TNT Explosion] Brick positions:", 
+    allBricks.map(b => `${b.brickData?.col},${b.brickData?.row}${b.brickData?.isHalfSize ? `-${b.brickData?.halfSizeAlign}` : ''}`).sort()
+  );
+  
+  const damageByRing = new Map<number, { count: number; types: string[] }>();
 
-  gridMap.forEach((brickSprite) => {
+  allBricks.forEach((brickSprite) => {
     if (!brickSprite.brickData) return;
     if (brickSprite.brickData.type === "unbreakable") {
-      console.log("[TNT Explosion] Skipping unbreakable brick at:", {
-        col: brickSprite.brickData.col,
-        row: brickSprite.brickData.row,
-      });
       return;
     }
     if (brickSprite === brick) {
-      console.log("[TNT Explosion] Skipping TNT itself");
       return;
     }
 
     const targetCol = brickSprite.brickData.col!;
     const targetRow = brickSprite.brickData.row!;
     const targetIsHalfSize = brickSprite.brickData.isHalfSize || false;
-    const targetHalfAlign = brickSprite.brickData.halfSizeAlign || "left";
+    const targetHalfAlign = brickSprite.brickData.halfSizeAlign;
 
-    console.log("[TNT Explosion] Checking brick:", {
-      type: brickSprite.brickData.type,
-      col: targetCol,
-      row: targetRow,
-      isHalfSize: targetIsHalfSize,
-      halfSizeAlign: targetHalfAlign,
-      health: brickSprite.brickData.health,
-    });
-
-    const targetHalfPositions = getHalfPositions(
+    // Calculate half-block distance
+    const halfBlockDistance = calculateHalfBlockDistance(
+      tntCol,
+      tntRow,
+      tntIsHalfSize,
+      tntHalfAlign,
       targetCol,
+      targetRow,
       targetIsHalfSize,
       targetHalfAlign
     );
 
-    // Calculate total damage for this brick
-    let totalDamage = 0;
+    // Calculate damage based on half-block distance (ring)
+    const ring = Math.ceil(halfBlockDistance);
+    const damage = calculateDamageByHalfBlockDistance(halfBlockDistance);
 
-    for (const targetHalf of targetHalfPositions) {
-      let minHalfDistance = Infinity;
+    console.log("[TNT Explosion] Brick check:", {
+      type: brickSprite.brickData.type,
+      targetCol,
+      targetRow,
+      targetIsHalfSize,
+      targetHalfAlign,
+      health: brickSprite.brickData.health,
+      tntCol,
+      tntRow,
+      tntIsHalfSize,
+      tntHalfAlign,
+      halfBlockDistance,
+      ring,
+      damage,
+      willDestroy: damage >= brickSprite.brickData.health,
+    });
 
-      for (const tntHalf of tntHalfPositions) {
-        const distance = calculateHalfBlockDistance(
-          tntHalf,
-          targetHalf,
-          tntRow,
-          targetRow
-        );
-
-        console.log("[TNT Explosion] Distance calculation detail:", {
-          tntHalf: `${tntHalf.col},${tntHalf.half}`,
-          targetHalf: `${targetHalf.col},${targetHalf.half}`,
-          colDiff: Math.abs(tntHalf.col - targetHalf.col),
-          rowDiff: Math.abs(tntRow - targetRow),
-          totalDistance: distance,
-        });
-
-        minHalfDistance = Math.min(minHalfDistance, distance);
+    if (damage > 0) {
+      bricksToDamage.set(brickSprite, damage);
+      
+      // Track damage by ring for summary
+      if (!damageByRing.has(ring)) {
+        damageByRing.set(ring, { count: 0, types: [] });
       }
-
-      console.log("[TNT Explosion] Half distance calculation:", {
-        targetHalf: targetHalf.half,
-        minHalfDistance,
-      });
-
-      const halfDamage = calculateDamageByDistance(minHalfDistance);
-
-      console.log("[TNT Explosion] Half damage:", {
-        targetHalf: targetHalf.half,
-        distance: minHalfDistance,
-        damage: halfDamage,
-      });
-
-      totalDamage += halfDamage;
-    }
-
-    if (totalDamage > 0) {
-      const currentDamage = bricksToDamage.get(brickSprite) || 0;
-      const finalDamage = Math.max(currentDamage, totalDamage);
-      bricksToDamage.set(brickSprite, finalDamage);
-      console.log("[TNT Explosion] Brick will take damage:", {
-        type: brickSprite.brickData.type,
-        col: targetCol,
-        row: targetRow,
-        currentHealth: brickSprite.brickData.health,
-        damage: finalDamage,
-        newHealth: brickSprite.brickData.health - finalDamage,
-      });
-    } else {
-      console.log("[TNT Explosion] Brick out of range:", {
-        type: brickSprite.brickData.type,
-        col: targetCol,
-        row: targetRow,
-      });
+      const ringData = damageByRing.get(ring)!;
+      ringData.count++;
+      if (!ringData.types.includes(brickSprite.brickData.type)) {
+        ringData.types.push(brickSprite.brickData.type);
+      }
     }
   });
 
+  console.log("[TNT Explosion] Damage summary by ring:", Object.fromEntries(damageByRing));
   console.log("[TNT Explosion] Total bricks to damage:", bricksToDamage.size);
+
 
   // Create explosion effect
   const explosion = scene.add.circle(brick.x, brick.y, 100, 0xff0000, 0.5);
@@ -309,24 +297,9 @@ export function explodeTNT(
   // Apply damage to all affected bricks
   bricksToDamage.forEach((damage, brickSprite) => {
     if (brickSprite.brickData) {
-      const oldHealth = brickSprite.brickData.health;
       brickSprite.brickData.health -= damage;
-      console.log("[TNT Explosion] Applying damage:", {
-        type: brickSprite.brickData.type,
-        col: brickSprite.brickData.col,
-        row: brickSprite.brickData.row,
-        oldHealth,
-        damage,
-        newHealth: brickSprite.brickData.health,
-        willDestroy: brickSprite.brickData.health <= 0,
-      });
 
       if (brickSprite.brickData.health <= 0) {
-        console.log("[TNT Explosion] Destroying brick:", {
-          type: brickSprite.brickData.type,
-          col: brickSprite.brickData.col,
-          row: brickSprite.brickData.row,
-        });
         destroyBrick(brickSprite, brickSprite.brickData);
       } else {
         // Update visual appearance for metal bricks
