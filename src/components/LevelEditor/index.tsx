@@ -4,11 +4,11 @@ import "../LevelEditor.css";
 import { EventBus } from "../../game/EventBus";
 import { DEFAULT_COLORS } from "./constants";
 import { useWindowSize } from "./hooks/useWindowSize";
-import { useLevelStorage } from "./hooks/useLevelStorage";
 import { useDragToPlace } from "./hooks/useDragToPlace";
 import { getNextPortalPairId } from "./utils/portalPairing";
 import { createBrickData } from "./utils/brickCreation";
-import { saveToStorage } from "./utils/storage";
+import { saveToStorage, loadFromStorage } from "./utils/storage";
+import { cleanBricks } from "./utils/validation";
 import { EditorHeader } from "./components/EditorHeader";
 import { BrickSelector } from "./components/BrickSelector";
 import { ColorPicker } from "./components/ColorPicker";
@@ -17,6 +17,7 @@ import { EditorGrid } from "./components/EditorGrid";
 import { EditorToolbar, BrushMode } from "./components/EditorToolbar";
 import { SettingsModal } from "./components/SettingsModal";
 import { useSelection } from "./hooks/useSelection";
+import { useHistory } from "./hooks/useHistory";
 
 interface LevelEditorProps {
   onTestLevel?: (levelData: LevelData) => void;
@@ -76,11 +77,31 @@ export function LevelEditor({
   const initialBrickWidth = Math.min(calculatedWidth, calculatedHeight * 3);
   const initialBrickHeight = initialBrickWidth / 3;
 
-  const { levelData, setLevelData } = useLevelStorage(
-    initialBrickWidth,
-    initialBrickHeight,
-    padding
-  );
+  // Load initial data from storage
+  const [initialLevelData] = useState<LevelData>(() => {
+    const stored = loadFromStorage();
+    if (stored) return stored;
+    return {
+      name: "New Level",
+      width: 10,
+      height: 8,
+      bricks: [],
+      backgroundColor: 0x1a1a2e,
+      brickWidth: initialBrickWidth,
+      brickHeight: initialBrickHeight,
+      padding: padding,
+    };
+  });
+
+  // Wrap levelData with history management
+  const {
+    state: levelData,
+    setState: setLevelDataWithHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useHistory(initialLevelData);
 
   // Recalculate dimensions based on actual levelData
   const recalculatedWidth = Math.max(
@@ -93,6 +114,50 @@ export function LevelEditor({
   );
   const brickWidth = Math.min(recalculatedWidth, recalculatedHeight * 3);
   const brickHeight = brickWidth / 3;
+
+  // Auto-save to localStorage whenever levelData changes (but not during undo/redo)
+  const isUndoRedoRef = useRef(false);
+  useEffect(() => {
+    if (isUndoRedoRef.current) {
+      isUndoRedoRef.current = false;
+      return;
+    }
+
+    // Clean bricks before saving
+    const cleanedBricks = cleanBricks(
+      levelData.bricks,
+      levelData.width,
+      levelData.height
+    );
+
+    const dataToSave = {
+      ...levelData,
+      bricks: cleanedBricks,
+      brickWidth: brickWidth,
+      brickHeight: brickHeight,
+      padding: padding,
+    };
+    saveToStorage(dataToSave);
+  }, [levelData, brickWidth, brickHeight, padding]);
+
+  // Wrapper that updates history (which will trigger auto-save)
+  const setLevelData = useCallback(
+    (updater: LevelData | ((prev: LevelData) => LevelData)) => {
+      setLevelDataWithHistory(updater);
+    },
+    [setLevelDataWithHistory]
+  );
+
+  // Enhanced undo/redo that marks the operation
+  const handleUndo = useCallback(() => {
+    isUndoRedoRef.current = true;
+    undo();
+  }, [undo]);
+
+  const handleRedo = useCallback(() => {
+    isUndoRedoRef.current = true;
+    redo();
+  }, [redo]);
 
   // Listen for return from test mode
   useEffect(() => {
@@ -806,6 +871,10 @@ export function LevelEditor({
         onLevelNameChange={(name) =>
           setLevelData((prev) => ({ ...prev, name }))
         }
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onTestLevel={() => {
           const testData = {
             ...levelData,

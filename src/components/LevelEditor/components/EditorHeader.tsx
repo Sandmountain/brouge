@@ -9,6 +9,10 @@ interface EditorHeaderProps {
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
   onBackToGame?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export function EditorHeader({
@@ -20,6 +24,10 @@ export function EditorHeader({
   onImport,
   onClear,
   onBackToGame,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }: EditorHeaderProps) {
   return (
     <div className="editor-header">
@@ -44,6 +52,26 @@ export function EditorHeader({
           className="level-name-input"
           placeholder="Level Name"
         />
+        {onUndo && (
+          <button
+            onClick={onUndo}
+            className="btn btn-secondary"
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            ↶ Undo
+          </button>
+        )}
+        {onRedo && (
+          <button
+            onClick={onRedo}
+            className="btn btn-secondary"
+            disabled={!canRedo}
+            title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+          >
+            ↷ Redo
+          </button>
+        )}
         <button
           onClick={onTestLevel}
           className="btn btn-primary"
