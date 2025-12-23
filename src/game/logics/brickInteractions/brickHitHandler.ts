@@ -23,15 +23,25 @@ interface BrickHitContext {
 /**
  * Update health badge on a brick element
  */
+// Cache for health badge elements to avoid repeated DOM queries
+const healthBadgeCache = new WeakMap<HTMLElement, HTMLElement | null>();
+
 function updateHealthBadge(
   element: HTMLElement,
   health: number
 ): void {
-  const healthBadge = element.querySelector(".health-badge") as HTMLElement;
+  // Use cache to avoid repeated querySelector calls
+  let healthBadge = healthBadgeCache.get(element);
+  if (!healthBadge && healthBadge !== null) {
+    healthBadge = element.querySelector(".health-badge") as HTMLElement | null;
+    healthBadgeCache.set(element, healthBadge);
+  }
+  
   if (healthBadge && health > 1 && health < 999) {
     healthBadge.textContent = health.toString();
   } else if (healthBadge && (health <= 1 || health >= 999)) {
     healthBadge.remove();
+    healthBadgeCache.set(element, null); // Mark as removed
   }
 }
 

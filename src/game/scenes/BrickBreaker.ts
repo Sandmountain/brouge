@@ -307,22 +307,23 @@ export class BrickBreaker extends Scene {
     const moveDistance = (this.paddleSpeed * deltaTime) / 1000; // Convert to pixels per frame
 
     // Check Phaser keyboard first, then fallback to native keyState
+    // Optimize: cache keyState reference
     interface BrickBreakerWithKeyState extends BrickBreaker {
       keyState?: { [key: string]: boolean };
     }
     const self = this as BrickBreakerWithKeyState;
     const keyState = self.keyState || {};
 
-    // Check if keys exist before checking isDown, including native keyState fallback
+    // Optimize: reduce redundant checks by checking Phaser keys first (faster)
     const leftPressed =
-      (this.cursors && this.cursors.left && this.cursors.left.isDown) ||
-      (this.wasdKeys && this.wasdKeys.A && this.wasdKeys.A.isDown) ||
+      (this.cursors?.left?.isDown) ||
+      (this.wasdKeys?.A?.isDown) ||
       keyState["a"] ||
       keyState["arrowleft"] ||
       keyState["keya"];
     const rightPressed =
-      (this.cursors && this.cursors.right && this.cursors.right.isDown) ||
-      (this.wasdKeys && this.wasdKeys.D && this.wasdKeys.D.isDown) ||
+      (this.cursors?.right?.isDown) ||
+      (this.wasdKeys?.D?.isDown) ||
       keyState["d"] ||
       keyState["arrowright"] ||
       keyState["keyd"];
@@ -355,9 +356,10 @@ export class BrickBreaker extends Scene {
     });
 
     // Launch ball with spacebar or W
+    // Optimize: use optional chaining and check Phaser keys first
     const spacePressed =
-      (this.cursors && this.cursors.space && this.cursors.space.isDown) ||
-      (this.wasdKeys && this.wasdKeys.W && this.wasdKeys.W.isDown) ||
+      (this.cursors?.space?.isDown) ||
+      (this.wasdKeys?.W?.isDown) ||
       keyState[" "] ||
       keyState["space"] ||
       keyState["w"] ||

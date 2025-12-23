@@ -47,6 +47,25 @@ export function BrickEditor({
             />
           </label>
         )}
+        {/* HP field for all breakable blocks (not unbreakable, not portal) */}
+        {selectedBrick.type !== "unbreakable" && selectedBrick.type !== "portal" && (
+          <label>
+            HP:
+            <input
+              type="number"
+              min="1"
+              max="999"
+              value={selectedBrick.health}
+              onChange={(e) => {
+                const newHealth = Math.max(1, Math.min(999, parseInt(e.target.value) || 1));
+                onUpdate(selectedBrick, {
+                  health: newHealth,
+                  maxHealth: newHealth,
+                });
+              }}
+            />
+          </label>
+        )}
         {selectedBrick.type === "portal" && (
           <>
             {connectedPortal ? (

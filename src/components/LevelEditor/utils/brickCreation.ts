@@ -18,9 +18,19 @@ export const getBrickHealth = (type: BrickType): number => {
       return 3;
     case "boost":
     case "portal":
+    case "tnt":
+    case "chaos":
       return 1;
     case "unbreakable":
       return 999;
+    // Fuse types
+    case "fuse-horizontal":
+    case "fuse-left-up":
+    case "fuse-right-up":
+    case "fuse-left-down":
+    case "fuse-right-down":
+    case "fuse-vertical":
+      return 1;
     default:
       return 1;
   }

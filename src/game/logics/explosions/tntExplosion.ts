@@ -275,9 +275,15 @@ export function explodeTNT(
         // Update health badge
         const element = brickSprite.node as HTMLElement;
         if (element) {
-          const healthBadge = element.querySelector(
-            ".health-badge"
-          ) as HTMLElement;
+          // Use cached query to avoid repeated DOM queries
+          let healthBadge = (element as any).__cachedHealthBadge;
+          if (!healthBadge && healthBadge !== null) {
+            healthBadge = element.querySelector(
+              ".health-badge"
+            ) as HTMLElement | null;
+            (element as any).__cachedHealthBadge = healthBadge;
+          }
+
           if (
             healthBadge &&
             brickSprite.brickData.health > 1 &&
@@ -290,6 +296,7 @@ export function explodeTNT(
               brickSprite.brickData.health >= 999)
           ) {
             healthBadge.remove();
+            (element as any).__cachedHealthBadge = null; // Mark as removed
           }
         }
         // Visual feedback

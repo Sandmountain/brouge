@@ -64,9 +64,13 @@ export function damageNeighbors(
       // Update health badge if it exists
       const element = neighborBrick.node as HTMLElement;
       if (element) {
-        const healthBadge = element.querySelector(
-          ".health-badge"
-        ) as HTMLElement;
+        // Use cached query or query once
+        let healthBadge = (element as any).__cachedHealthBadge;
+        if (!healthBadge && healthBadge !== null) {
+          healthBadge = element.querySelector(".health-badge") as HTMLElement | null;
+          (element as any).__cachedHealthBadge = healthBadge;
+        }
+        
         if (
           healthBadge &&
           neighborBrick.brickData.health > 1 &&
@@ -79,6 +83,7 @@ export function damageNeighbors(
             neighborBrick.brickData.health >= 999)
         ) {
           healthBadge.remove();
+          (element as any).__cachedHealthBadge = null; // Mark as removed
         }
       }
 

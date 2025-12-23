@@ -32,9 +32,6 @@ export function animateShield(context: ShieldAnimationContext): void {
   const pulseThickness = baseThickness + pulseIntensity * 0.5; // Subtle pulse between 1.5-2.5px
   const glowIntensity = 0.85 + pulseIntensity * 0.15; // Subtle pulse opacity 0.85-1.0
 
-  // Clear and redraw shield with current pulse state
-  shieldGraphics.clear();
-
   // Position graphics at shield arc position
   const shieldX = shieldArc.x;
   const shieldY = shieldArc.y;
@@ -48,7 +45,11 @@ export function animateShield(context: ShieldAnimationContext): void {
   const lineThickness = Math.max(1.5, pulseThickness); // Subtle pulse (1.5-2.5px)
 
   // Draw the arc as a curved line using multiple segments
-  const segments = 20;
+  // Reduced segments for better performance
+  const segments = 12;
+  
+  // Clear and redraw shield with current pulse state
+  shieldGraphics.clear();
   // Outer glow (very subtle, always visible)
   shieldGraphics.lineStyle(
     lineThickness + 0.5,
@@ -97,7 +98,8 @@ export function animateShield(context: ShieldAnimationContext): void {
   shieldGraphics.strokePath();
 
   // Add subtle energy particles/sparks along the arc
-  const particleCount = 4; // Fewer particles
+  // Reduced particle count for better performance
+  const particleCount = 2;
   for (let i = 0; i < particleCount; i++) {
     const t = i / particleCount; // 0 to 1 along the arc
     const particleX = leftX + (rightX - leftX) * t;
