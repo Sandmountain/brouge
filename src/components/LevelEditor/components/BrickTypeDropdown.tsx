@@ -177,22 +177,22 @@ export function BrickTypeDropdown({
               top: "100%",
               left: 0,
               marginTop: "4px",
-              background: "#1a1a2e",
-              border: "1px solid #4ecdc4",
+              background: "#1a1a1a",
+              border: "1px solid #e63946",
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
               zIndex: 1000,
-              minWidth: "200px",
+              minWidth: "160px",
               maxHeight: "400px",
               overflowY: "auto",
-              padding: "8px",
+              padding: "6px",
             }}
           >
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-                gap: "8px",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "4px",
               }}
             >
               {BRICK_TYPES.map((type) => {
@@ -214,13 +214,13 @@ export function BrickTypeDropdown({
                       backgroundColor:
                         type.type === "default" ? typeColorHex : undefined,
                       width: "100%",
-                      aspectRatio: "1",
+                      height: "32px",
                       position: "relative",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      padding: "8px",
+                      padding: "4px",
                       cursor: "pointer",
                     }}
                     onClick={() => {
@@ -260,8 +260,8 @@ export function BrickTypeDropdown({
                     <div
                       className="brick-preview-label"
                       style={{
-                        fontSize: "10px",
-                        marginTop: "4px",
+                        fontSize: "8px",
+                        marginTop: "2px",
                         textAlign: "center",
                       }}
                     >
@@ -317,8 +317,8 @@ export function BrickTypeDropdown({
                 top: "100%",
                 left: 0,
                 marginTop: "4px",
-                background: "#1a1a2e",
-                border: "1px solid #4ecdc4",
+                background: "#1a1a1a",
+                border: "1px solid #e63946",
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
                 zIndex: 1001,
@@ -363,13 +363,13 @@ export function BrickTypeDropdown({
                             backgroundColor: colorHex,
                             border:
                               selectedColor === color
-                                ? "2px solid #4ecdc4"
+                                ? "2px solid #e63946"
                                 : "1px solid #666",
                             borderRadius: "4px",
                             cursor: "pointer",
                             boxShadow:
                               selectedColor === color
-                                ? "0 0 8px rgba(78, 205, 196, 0.8)"
+                                ? "0 0 8px rgba(230, 57, 70, 0.8)"
                                 : "none",
                           }}
                           title={colorHex}
@@ -402,13 +402,13 @@ export function BrickTypeDropdown({
                         backgroundColor: colorHex,
                         border:
                           selectedColor === color
-                            ? "2px solid #4ecdc4"
+                            ? "2px solid #e63946"
                             : "1px solid #333",
                         borderRadius: "3px",
                         cursor: "pointer",
                         boxShadow:
                           selectedColor === color
-                            ? "0 0 6px rgba(78, 205, 196, 0.8)"
+                            ? "0 0 6px rgba(230, 57, 70, 0.8)"
                             : "none",
                       }}
                       title={colorHex}

@@ -43,8 +43,8 @@ export function GridSizeControls({
             style={{
               width: "50px",
               padding: "4px 6px",
-              background: "#2a2a3e",
-              border: "1px solid #4ecdc4",
+              background: "#2a2a2a",
+              border: "1px solid #e63946",
               borderRadius: "4px",
               color: "#ffffff",
               fontSize: "12px",
@@ -75,8 +75,8 @@ export function GridSizeControls({
             style={{
               width: "50px",
               padding: "4px 6px",
-              background: "#2a2a3e",
-              border: "1px solid #4ecdc4",
+              background: "#2a2a2a",
+              border: "1px solid #e63946",
               borderRadius: "4px",
               color: "#ffffff",
               fontSize: "12px",

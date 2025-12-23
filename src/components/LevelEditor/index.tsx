@@ -1075,10 +1075,10 @@ export function LevelEditor({
                 {/* Undo/Redo buttons */}
                 <div
                   style={{
-                    background: "#1a1a2e",
+                    background: "#1a1a1a",
                     padding: "8px",
                     borderRadius: "8px",
-                    border: "1px solid #4ecdc4",
+                    border: "1px solid #e63946",
                     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
                     display: "flex",
                     gap: "4px",
@@ -1114,10 +1114,10 @@ export function LevelEditor({
                 {brushMode !== undefined && (
                   <div
                     style={{
-                      background: "#1a1a2e",
+                      background: "#1a1a1a",
                       padding: "8px",
                       borderRadius: "8px",
-                      border: "1px solid #4ecdc4",
+                      border: "1px solid #e63946",
                       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
                     }}
                   >
@@ -1150,10 +1150,10 @@ export function LevelEditor({
               {/* Grid size controls */}
               <div
                 style={{
-                  background: "#1a1a2e",
+                  background: "#1a1a1a",
                   padding: "8px",
                   borderRadius: "8px",
-                  border: "1px solid #4ecdc4",
+                  border: "1px solid #e63946",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
                   display: "flex",
                   alignItems: "center",

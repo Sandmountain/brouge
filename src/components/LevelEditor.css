@@ -1,10 +1,27 @@
+/* CSS Variables for easy color customization */
+:root {
+  --primary-color: #e63946; /* Red primary color */
+  --primary-color-hover: #f77a7a; /* Lighter red for hover */
+  --primary-color-dark: #c1121f; /* Darker red for active states */
+
+  /* Monochrome dark mode colors (no blue tint) */
+  --bg-primary: #0a0a0a; /* Main background - pure dark */
+  --bg-secondary: #1a1a1a; /* Secondary background - dark gray */
+  --bg-tertiary: #2a2a2a; /* Tertiary background - medium gray */
+  --bg-quaternary: #3a3a3a; /* Quaternary background - lighter gray */
+
+  --border-color: #404040; /* Border color - neutral gray */
+  --border-color-light: #505050; /* Lighter border */
+  --text-color: #ffffff; /* Text color */
+}
+
 .level-editor {
   width: 100%;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0f0f23;
-  color: #ffffff;
+  background: var(--bg-primary);
+  color: var(--text-color);
   font-family: Arial, sans-serif;
   overflow-x: hidden;
 }
@@ -14,13 +31,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  background: #1a1a2e;
-  border-bottom: 2px solid #4ecdc4;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .editor-header h1 {
   margin: 0;
-  color: #4ecdc4;
+  color: var(--primary-color);
   font-size: 32px;
 }
 
@@ -32,9 +49,9 @@
 
 .level-name-input {
   padding: 8px 12px;
-  background: #2a2a3e;
-  border: 1px solid #4ecdc4;
-  color: #ffffff;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
   border-radius: 4px;
   font-size: 14px;
 }
@@ -47,25 +64,37 @@
   font-size: 14px;
   font-weight: bold;
   transition: all 0.3s;
+  /* Bevel effect - similar to bricks */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset -1px 0 0 rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .btn-primary {
-  background: #4ecdc4;
-  color: #ffffff;
+  background: var(--primary-color);
+  color: var(--text-color);
+  border: 1px solid var(--primary-color-dark);
 }
 
 .btn-primary:hover {
-  background: #5edcd4;
+  background: var(--primary-color-hover);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4), inset 1px 0 0 rgba(255, 255, 255, 0.2),
+    inset -1px 0 0 rgba(0, 0, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 .btn-secondary {
-  background: #2a2a3e;
-  color: #ffffff;
-  border: 1px solid #4ecdc4;
+  background: var(--bg-tertiary);
+  color: var(--text-color);
+  border: 1px solid var(--primary-color);
 }
 
 .btn-secondary:hover {
-  background: #3a3a4e;
+  background: var(--bg-quaternary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset -1px 0 0 rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .btn-danger {
@@ -101,10 +130,10 @@
 
 .editor-sidebar {
   width: 300px;
-  background: #1a1a2e;
+  background: var(--bg-secondary);
   padding: 20px;
   overflow-y: auto;
-  border-right: 2px solid #2a2a3e;
+  border-right: 2px solid var(--border-color);
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease, padding 0.3s ease, border-width 0.3s ease;
@@ -123,10 +152,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #2a2a3e;
+  background: var(--bg-tertiary);
   border-radius: 8px;
   margin-bottom: 20px;
-  border: 1px solid #3a3a4e;
+  border: 1px solid var(--border-color);
 }
 
 .toolbar-group {
@@ -138,7 +167,7 @@
 .toolbar-divider {
   width: 1px;
   height: 24px;
-  background: #3a3a4e;
+  background: var(--border-color);
   margin: 0 4px;
 }
 
@@ -153,23 +182,33 @@
   width: 36px;
   height: 36px;
   padding: 0;
-  background: #1a1a2e;
-  border: 1px solid #3a3a4e;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--text-color);
   transition: all 0.2s;
+  /* Bevel effect - similar to bricks */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset -1px 0 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .toolbar-button:hover {
-  background: #2a2a3e;
-  border-color: #4ecdc4;
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4), inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset -1px 0 0 rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .toolbar-button.active {
-  background: #4ecdc4;
-  border-color: #4ecdc4;
-  color: #ffffff;
+  background: var(--primary-color);
+  border-color: var(--primary-color-dark);
+  color: var(--text-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4), inset 1px 0 0 rgba(255, 255, 255, 0.2),
+    inset -1px 0 0 rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .toolbar-button .material-icons {
@@ -191,8 +230,8 @@
 }
 
 .modal-content {
-  background: #1a1a2e;
-  border: 2px solid #4ecdc4;
+  background: var(--bg-secondary);
+  border: 2px solid var(--primary-color);
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
@@ -206,12 +245,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   margin: 0;
-  color: #4ecdc4;
+  color: var(--primary-color);
   font-size: 24px;
 }
 
@@ -223,16 +262,23 @@
   height: 32px;
   padding: 0;
   background: transparent;
-  border: 1px solid #3a3a4e;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--text-color);
   transition: all 0.2s;
+  /* Bevel effect */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2), inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    inset -1px 0 0 rgba(0, 0, 0, 0.2);
 }
 
 .modal-close:hover {
-  background: #2a2a3e;
-  border-color: #4ecdc4;
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset -1px 0 0 rgba(0, 0, 0, 0.3);
 }
 
 .modal-close .material-icons {
@@ -257,7 +303,7 @@
 
 .sidebar-section h3 {
   margin: 0 0 15px 0;
-  color: #4ecdc4;
+  color: var(--primary-color);
   font-size: 18px;
 }
 
@@ -292,8 +338,8 @@
 }
 
 .brick-type-preview.active {
-  border-color: #4ecdc4;
-  box-shadow: 0 0 12px rgba(78, 205, 196, 0.8);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 12px rgba(230, 57, 70, 0.8);
   transform: scale(1.08);
 }
 
@@ -324,7 +370,7 @@
 .used-colors-row {
   margin-bottom: 15px;
   padding-bottom: 15px;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .used-colors-label {
@@ -358,9 +404,9 @@
 }
 
 .color-swatch-large.active {
-  border-color: #4ecdc4;
+  border-color: var(--primary-color);
   border-width: 3px;
-  box-shadow: 0 0 10px rgba(78, 205, 196, 0.7);
+  box-shadow: 0 0 10px rgba(230, 57, 70, 0.7);
   z-index: 2;
   position: relative;
 }
@@ -390,9 +436,9 @@
 }
 
 .color-swatch.active {
-  border-color: #4ecdc4;
+  border-color: var(--primary-color);
   border-width: 2px;
-  box-shadow: 0 0 8px rgba(78, 205, 196, 0.6);
+  box-shadow: 0 0 8px rgba(230, 57, 70, 0.6);
   z-index: 2;
   position: relative;
 }
@@ -406,8 +452,8 @@
   position: absolute;
   bottom: 20px;
   right: 20px;
-  background: #1a1a2e;
-  border: 2px solid #4ecdc4;
+  background: var(--bg-secondary);
+  border: 2px solid var(--primary-color);
   border-radius: 8px;
   padding: 20px;
   min-width: 250px;
@@ -421,12 +467,12 @@
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .brick-editor-header h3 {
   margin: 0;
-  color: #4ecdc4;
+  color: var(--primary-color);
   font-size: 18px;
 }
 
@@ -438,16 +484,23 @@
   height: 28px;
   padding: 0;
   background: transparent;
-  border: 1px solid #3a3a4e;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--text-color);
   transition: all 0.2s;
+  /* Bevel effect */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2), inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    inset -1px 0 0 rgba(0, 0, 0, 0.2);
 }
 
 .brick-editor-close:hover {
-  background: #2a2a3e;
-  border-color: #4ecdc4;
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset -1px 0 0 rgba(0, 0, 0, 0.3);
 }
 
 .brick-editor-close .material-icons {
@@ -469,9 +522,9 @@
 
 .brick-properties input {
   padding: 6px;
-  background: #2a2a3e;
-  border: 1px solid #4ecdc4;
-  color: #ffffff;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
   border-radius: 4px;
 }
 
@@ -490,9 +543,9 @@
 
 .size-input {
   padding: 6px;
-  background: #2a2a3e;
-  border: 1px solid #4ecdc4;
-  color: #ffffff;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
   border-radius: 4px;
   font-size: 14px;
   width: 100%;
@@ -524,9 +577,9 @@
 .canvas-grid {
   display: grid;
   gap: 5px;
-  background: #0f0f23;
+  background: var(--bg-secondary);
   padding: 20px;
-  border: 2px solid #2a2a3e;
+  border: 1px solid var(--primary-color);
   border-radius: 8px;
   /* Auto-scale cell size based on grid dimensions */
   --grid-width: 10;
@@ -557,8 +610,8 @@
 }
 
 .grid-cell:hover {
-  border-color: #4ecdc4;
-  box-shadow: 0 0 5px rgba(78, 205, 196, 0.3);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px rgba(230, 57, 70, 0.3);
 }
 
 .grid-cell.has-brick {

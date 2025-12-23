@@ -69,7 +69,7 @@ export function EditorToolbar({
         style={{
           width: "1px",
           height: "24px",
-          background: "#4ecdc4",
+          background: "#e63946",
           opacity: 0.3,
         }}
       />
@@ -89,7 +89,7 @@ export function EditorToolbar({
         style={{
           width: "1px",
           height: "24px",
-          background: "#4ecdc4",
+          background: "#e63946",
           opacity: 0.3,
         }}
       />
@@ -115,7 +115,7 @@ export function EditorToolbar({
         style={{
           width: "1px",
           height: "24px",
-          background: "#4ecdc4",
+          background: "#e63946",
           opacity: 0.3,
         }}
       />
