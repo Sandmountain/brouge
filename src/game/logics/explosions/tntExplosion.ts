@@ -1,6 +1,5 @@
 import { Scene } from "phaser";
 import { BrickData } from "../../types";
-import { isFuseType } from "../utils/brickTypeUtils";
 
 type BrickSprite = Phaser.GameObjects.DOMElement & { brickData?: BrickData };
 
@@ -207,9 +206,6 @@ export function explodeTNT(
 
   allBricks.forEach((brickSprite) => {
     if (!brickSprite.brickData) return;
-    if (brickSprite.brickData.type === "unbreakable") {
-      return;
-    }
     if (brickSprite === brick) {
       return;
     }
@@ -234,6 +230,26 @@ export function explodeTNT(
     // Calculate damage based on half-block distance (ring)
     const ring = Math.ceil(halfBlockDistance);
     const damage = calculateDamageByHalfBlockDistance(halfBlockDistance);
+
+    // Special handling for unbreakable blocks: only destroyable in ring 1
+    if (brickSprite.brickData.type === "unbreakable") {
+      if (ring === 1) {
+        // Unbreakable blocks in ring 1 can be destroyed by TNT
+        bricksToDamage.set(brickSprite, 999); // Set damage high enough to destroy (health is 999)
+
+        // Track damage by ring for summary
+        if (!damageByRing.has(ring)) {
+          damageByRing.set(ring, { count: 0, types: [] });
+        }
+        const ringData = damageByRing.get(ring)!;
+        ringData.count++;
+        if (!ringData.types.includes(brickSprite.brickData.type)) {
+          ringData.types.push(brickSprite.brickData.type);
+        }
+      }
+      // Skip unbreakable blocks not in ring 1
+      return;
+    }
 
     if (damage > 0) {
       bricksToDamage.set(brickSprite, damage);
