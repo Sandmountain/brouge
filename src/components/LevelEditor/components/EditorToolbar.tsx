@@ -1,8 +1,16 @@
-import React from "react";
 import { BrickType, LevelData } from "../../../game/types";
 import { BrickTypeDropdown } from "./BrickTypeDropdown";
+import {
+  Brush,
+  Eraser,
+  MousePointer2,
+  SquareDashedMousePointer,
+  Square,
+  Columns,
+  Settings,
+} from "lucide-react";
 
-export type BrushMode = "paint" | "erase" | "select";
+export type BrushMode = "paint" | "erase" | "single-select" | "multi-select";
 
 interface EditorToolbarProps {
   brushMode: BrushMode;
@@ -45,23 +53,34 @@ export function EditorToolbar({
         <button
           className={`toolbar-button ${brushMode === "paint" ? "active" : ""}`}
           onClick={() => onBrushModeChange("paint")}
-          title="Paint"
+          title="Paint (B)"
         >
-          <span className="material-icons">brush</span>
+          <Brush size={20} />
         </button>
         <button
           className={`toolbar-button ${brushMode === "erase" ? "active" : ""}`}
           onClick={() => onBrushModeChange("erase")}
-          title="Erase"
+          title="Erase (E)"
         >
-          <span className="material-icons">clear</span>
+          <Eraser size={20} />
         </button>
         <button
-          className={`toolbar-button ${brushMode === "select" ? "active" : ""}`}
-          onClick={() => onBrushModeChange("select")}
-          title="Select"
+          className={`toolbar-button ${
+            brushMode === "single-select" ? "active" : ""
+          }`}
+          onClick={() => onBrushModeChange("single-select")}
+          title="Arrow Selector Tool (A)"
         >
-          <span className="material-icons">select_all</span>
+          <MousePointer2 size={20} />
+        </button>
+        <button
+          className={`toolbar-button ${
+            brushMode === "multi-select" ? "active" : ""
+          }`}
+          onClick={() => onBrushModeChange("multi-select")}
+          title="Ink Selection (S)"
+        >
+          <SquareDashedMousePointer size={20} />
         </button>
       </div>
 
@@ -98,16 +117,16 @@ export function EditorToolbar({
         <button
           className={`toolbar-button ${!isHalfSize ? "active" : ""}`}
           onClick={() => onHalfSizeToggle(false)}
-          title="Full Size"
+          title="Full Size (M)"
         >
-          <span className="material-icons">crop_square</span>
+          <Square size={20} />
         </button>
         <button
           className={`toolbar-button ${isHalfSize ? "active" : ""}`}
           onClick={() => onHalfSizeToggle(true)}
-          title="Half Size"
+          title="Half Size (N)"
         >
-          <span className="material-icons">view_column</span>
+          <Columns size={20} />
         </button>
       </div>
 
@@ -125,9 +144,8 @@ export function EditorToolbar({
         onClick={onSettingsClick}
         title="Settings"
       >
-        <span className="material-icons">settings</span>
+        <Settings size={20} />
       </button>
     </div>
   );
 }
-

@@ -19,7 +19,7 @@ interface EditorGridProps {
     path: Array<{ col: number; row: number; halfSlot?: "left" | "right" }>;
   } | null;
   isHalfSize: boolean;
-  brushMode: "paint" | "erase" | "select";
+  brushMode: "paint" | "erase" | "single-select" | "multi-select";
   selectedBricks: Set<BrickData>;
   selectedBrick: BrickData | null;
   selectionState: {
@@ -124,7 +124,7 @@ export function EditorGrid({
     <div
       className="editor-canvas"
       style={{ overflow: "visible", width: "100%", boxSizing: "border-box" }}
-      onMouseDown={brushMode === "select" ? onSelectionStart : undefined}
+      onMouseDown={brushMode === "multi-select" ? onSelectionStart : undefined}
     >
       <div
         className="canvas-wrapper"
@@ -146,7 +146,7 @@ export function EditorGrid({
           }
         >
           {/* Selection rectangle - positioned using absolute pixels, constrained to grid */}
-          {selectionRect && brushMode === "select" && (
+          {selectionRect && brushMode === "multi-select" && (
             <div
               className="selection-rectangle"
               style={{
@@ -164,7 +164,7 @@ export function EditorGrid({
           )}
 
           {/* Selected brick highlights - positioned using exact pixel coordinates */}
-          {brushMode === "select" &&
+          {brushMode === "multi-select" &&
             Array.from(selectedBricks).map((brick) => {
               if (brick.col === undefined || brick.row === undefined)
                 return null;

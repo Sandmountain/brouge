@@ -22,7 +22,7 @@ export const useDragToPlace = (
   selectedColor: number,
   selectedBrickType: BrickType,
   isFuseMode: boolean,
-  brushMode: "paint" | "erase" | "select",
+  brushMode: "paint" | "erase" | "single-select" | "multi-select",
   onBricksPlaced: (bricks: BrickData[]) => void,
   onBricksErased?: (path: Array<{ col: number; row: number; halfSlot?: "left" | "right" }>) => void,
   isHalfSize?: boolean,

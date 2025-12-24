@@ -1,4 +1,5 @@
 import { BrickData, LevelData } from "../../../game/types";
+import { X } from "lucide-react";
 
 interface BrickEditorProps {
   selectedBrick: BrickData;
@@ -29,7 +30,7 @@ export function BrickEditor({
       <div className="brick-editor-header">
         <h3>Edit Brick</h3>
         <button className="brick-editor-close" onClick={onClose} title="Close editor">
-          <span className="material-icons">close</span>
+          <X size={20} />
         </button>
       </div>
       <div className="brick-properties">

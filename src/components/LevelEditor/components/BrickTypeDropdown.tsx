@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { BrickType, LevelData } from "../../../game/types";
+import { ChevronDown } from "lucide-react";
 import { BRICK_TYPES, DEFAULT_COLORS } from "../constants";
 
 interface BrickTypeDropdownProps {
@@ -155,18 +156,15 @@ export function BrickTypeDropdown({
             </div>
           </div>
           {/* Dropdown arrow */}
-          <span
-            className="material-icons"
+          <ChevronDown
+            size={16}
             style={{
-              fontSize: "16px",
               flexShrink: 0,
               display: "inline-block",
               transition: "transform 0.2s",
               transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
             }}
-          >
-            arrow_drop_down
-          </span>
+          />
         </button>
 
         {/* Dropdown menu */}

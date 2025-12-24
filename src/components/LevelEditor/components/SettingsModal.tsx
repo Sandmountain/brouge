@@ -1,5 +1,6 @@
 import React from "react";
 import { LevelData } from "../../../game/types";
+import { X } from "lucide-react";
 import { LevelStats } from "./LevelStats";
 
 interface SettingsModalProps {
@@ -21,7 +22,7 @@ export function SettingsModal({
         <div className="modal-header">
           <h2>Settings</h2>
           <button className="modal-close" onClick={onClose} title="Close settings">
-            <span className="material-icons">close</span>
+            <X size={20} />
           </button>
         </div>
         <div className="modal-body">

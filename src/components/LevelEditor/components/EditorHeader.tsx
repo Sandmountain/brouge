@@ -1,4 +1,14 @@
 import { LevelData } from "../../../game/types";
+import {
+  Home,
+  Menu,
+  PanelLeftOpen,
+  Play,
+  Save,
+  Download,
+  Upload,
+  Trash2,
+} from "lucide-react";
 
 interface EditorHeaderProps {
   levelData: LevelData;
@@ -40,7 +50,7 @@ export function EditorHeader({
             }}
             title="Return to main menu"
           >
-            <span className="material-icons">home</span>
+            <Home size={20} />
           </button>
         )}
         <h1>Level Editor</h1>
@@ -64,9 +74,11 @@ export function EditorHeader({
             }}
             title={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
           >
-            <span className="material-icons">
-              {isSidebarVisible ? "menu_open" : "menu"}
-            </span>
+            {isSidebarVisible ? (
+              <PanelLeftOpen size={20} />
+            ) : (
+              <Menu size={20} />
+            )}
           </button>
         )}
         <button
@@ -84,7 +96,7 @@ export function EditorHeader({
               : "Test your level in the game"
           }
         >
-          <span className="material-icons">play_arrow</span>
+          <Play size={20} />
         </button>
         <button
           onClick={onSave}
@@ -96,7 +108,7 @@ export function EditorHeader({
           }}
           title="Save level to local storage"
         >
-          <span className="material-icons">save</span>
+          <Save size={20} />
         </button>
         <button
           onClick={onExport}
@@ -108,7 +120,7 @@ export function EditorHeader({
           }}
           title="Export level as JSON file"
         >
-          <span className="material-icons">file_download</span>
+          <Download size={20} />
         </button>
         <label
           className="btn btn-secondary"
@@ -120,7 +132,7 @@ export function EditorHeader({
             cursor: "pointer",
           }}
         >
-          <span className="material-icons">file_upload</span>
+          <Upload size={20} />
           <input
             type="file"
             accept=".json"
@@ -138,7 +150,7 @@ export function EditorHeader({
           }}
           title="Clear all bricks and reset level"
         >
-          <span className="material-icons">delete</span>
+          <Trash2 size={20} />
         </button>
       </div>
     </div>

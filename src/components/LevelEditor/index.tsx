@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { LevelData, BrickData, BrickType } from "../../game/types";
+import { Undo, Redo } from "lucide-react";
 import "../LevelEditor.css";
 import { EventBus } from "../../game/EventBus";
 import { DEFAULT_COLORS } from "./constants";
@@ -198,9 +199,13 @@ export function LevelEditor({
           e.preventDefault();
           setBrushMode("erase");
           break;
+        case "a":
+          e.preventDefault();
+          setBrushMode("single-select");
+          break;
         case "s":
           e.preventDefault();
-          setBrushMode("select");
+          setBrushMode("multi-select");
           break;
         case "m":
           e.preventDefault();
@@ -445,7 +450,8 @@ export function LevelEditor({
 
   // Handle Delete key to remove selected bricks (multi-select or single select)
   useEffect(() => {
-    const hasMultiSelect = brushMode === "select" && selectedBricks.size > 0;
+    const hasMultiSelect =
+      brushMode === "multi-select" && selectedBricks.size > 0;
     const hasSingleSelect = selectedBrick !== null;
 
     if (!hasMultiSelect && !hasSingleSelect) return;
@@ -512,7 +518,8 @@ export function LevelEditor({
 
   // Handle "d" key to deselect/clear selection
   useEffect(() => {
-    const hasMultiSelect = brushMode === "select" && selectedBricks.size > 0;
+    const hasMultiSelect =
+      brushMode === "multi-select" && selectedBricks.size > 0;
     const hasSingleSelect = selectedBrick !== null;
 
     if (!hasMultiSelect && !hasSingleSelect) return;
@@ -550,7 +557,7 @@ export function LevelEditor({
 
   // Handle arrow key movement for selected bricks
   useEffect(() => {
-    if (brushMode !== "select" || selectedBricks.size === 0) return;
+    if (brushMode !== "multi-select" || selectedBricks.size === 0) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -858,6 +865,65 @@ export function LevelEditor({
         return;
       }
 
+      // Handle single-select mode - select a single brick on click
+      if (brushMode === "single-select") {
+        // Clear multi-select when using single-select
+        setSelectedBricks(new Set());
+
+        // Smart brick detection: always check for both full and half blocks
+        const fullSizeBlock = getBrickAtPosition(col, row);
+        if (fullSizeBlock && !fullSizeBlock.isHalfSize) {
+          setSelectedBrick(fullSizeBlock);
+          // Update selected brick type and color to match the selected brick
+          if (fullSizeBlock.type === "default") {
+            setSelectedBrickType("default");
+            setSelectedColor(fullSizeBlock.color);
+          } else if (fullSizeBlock.type === "fuse-horizontal") {
+            setIsFuseMode(true);
+          } else {
+            setSelectedBrickType(fullSizeBlock.type);
+          }
+          return;
+        }
+
+        // If no full-size block, check for half blocks
+        if (halfSlot !== undefined) {
+          const brickInClickedHalf = getBrickAtPosition(col, row, halfSlot);
+          if (brickInClickedHalf) {
+            setSelectedBrick(brickInClickedHalf);
+            if (brickInClickedHalf.type === "default") {
+              setSelectedBrickType("default");
+              setSelectedColor(brickInClickedHalf.color);
+            } else if (brickInClickedHalf.type === "fuse-horizontal") {
+              setIsFuseMode(true);
+            } else {
+              setSelectedBrickType(brickInClickedHalf.type);
+            }
+            return;
+          }
+
+          // As fallback, check the other half
+          const otherHalf = halfSlot === "left" ? "right" : "left";
+          const brickInOtherHalf = getBrickAtPosition(col, row, otherHalf);
+          if (brickInOtherHalf) {
+            setSelectedBrick(brickInOtherHalf);
+            if (brickInOtherHalf.type === "default") {
+              setSelectedBrickType("default");
+              setSelectedColor(brickInOtherHalf.color);
+            } else if (brickInOtherHalf.type === "fuse-horizontal") {
+              setIsFuseMode(true);
+            } else {
+              setSelectedBrickType(brickInOtherHalf.type);
+            }
+            return;
+          }
+        }
+
+        // If no brick found, clear selection
+        setSelectedBrick(null);
+        return;
+      }
+
       // Don't handle single clicks in erase mode if we're using drag - let drag handle it
       // Only handle if there's no active drag
       if (brushMode === "erase") {
@@ -890,59 +956,10 @@ export function LevelEditor({
         return;
       }
 
-      // Smart brick detection: always check for both full and half blocks
-      // Priority: 1) Full-size block, 2) Half block in clicked half, 3) Half block in other half
-
-      // First, check for a full-size block (takes priority)
-      const fullSizeBlock = getBrickAtPosition(col, row);
-      if (fullSizeBlock && !fullSizeBlock.isHalfSize) {
-        setSelectedBrick(fullSizeBlock);
-        // Update selected brick type and color to match the selected brick
-        if (fullSizeBlock.type === "default") {
-          setSelectedBrickType("default");
-          setSelectedColor(fullSizeBlock.color);
-        } else if (fullSizeBlock.type === "fuse-horizontal") {
-          setIsFuseMode(true);
-        } else {
-          setSelectedBrickType(fullSizeBlock.type);
-        }
+      // Paint mode: always place bricks, never select
+      // Only place bricks in paint mode, not in single-select mode
+      if (brushMode !== "paint") {
         return;
-      }
-
-      // If no full-size block, check for half blocks
-      if (halfSlot !== undefined) {
-        // Check for brick in the clicked half first
-        const brickInClickedHalf = getBrickAtPosition(col, row, halfSlot);
-        if (brickInClickedHalf) {
-          setSelectedBrick(brickInClickedHalf);
-          // Update selected brick type and color to match the selected brick
-          if (brickInClickedHalf.type === "default") {
-            setSelectedBrickType("default");
-            setSelectedColor(brickInClickedHalf.color);
-          } else if (brickInClickedHalf.type === "fuse-horizontal") {
-            setIsFuseMode(true);
-          } else {
-            setSelectedBrickType(brickInClickedHalf.type);
-          }
-          return;
-        }
-
-        // As fallback, check the other half
-        const otherHalf = halfSlot === "left" ? "right" : "left";
-        const brickInOtherHalf = getBrickAtPosition(col, row, otherHalf);
-        if (brickInOtherHalf) {
-          setSelectedBrick(brickInOtherHalf);
-          // Update selected brick type and color to match the selected brick
-          if (brickInOtherHalf.type === "default") {
-            setSelectedBrickType("default");
-            setSelectedColor(brickInOtherHalf.color);
-          } else if (brickInOtherHalf.type === "fuse-horizontal") {
-            setIsFuseMode(true);
-          } else {
-            setSelectedBrickType(brickInOtherHalf.type);
-          }
-          return;
-        }
       }
 
       // Use stored dimensions or current dimensions for position calculation
@@ -1221,7 +1238,7 @@ export function LevelEditor({
                       cursor: canUndo ? "pointer" : "not-allowed",
                     }}
                   >
-                    <span className="material-icons">undo</span>
+                    <Undo size={20} />
                   </button>
                   <button
                     onClick={handleRedo}
@@ -1233,7 +1250,7 @@ export function LevelEditor({
                       cursor: canRedo ? "pointer" : "not-allowed",
                     }}
                   >
-                    <span className="material-icons">redo</span>
+                    <Redo size={20} />
                   </button>
                 </div>
 
