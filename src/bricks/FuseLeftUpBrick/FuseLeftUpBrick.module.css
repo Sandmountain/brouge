@@ -31,6 +31,12 @@
   overflow: hidden;
 }
 
+/* For half-size blocks, extend horizontal line to reach full block width */
+/* This allows half blocks to connect visually with full blocks */
+:global(.brick.fuse-left-up[data-half-size="true"] .fuse-link .horizontal) {
+  width: 200%;
+}
+
 :global(.brick.fuse-left-up .fuse-link .horizontal::before) {
   content: "";
   position: absolute;

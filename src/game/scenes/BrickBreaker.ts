@@ -61,6 +61,8 @@ export class BrickBreaker extends Scene {
   private ballLaunched: { value: boolean } = { value: false };
   private prevBallVelocity: { x: number; y: number } = { x: 0, y: 0 };
   private cachedWorldBounds?: Phaser.Geom.Rectangle;
+  private lastPaddleHitTime: number = 0;
+  private lastBrickHits: Map<Phaser.GameObjects.GameObject, number> = new Map();
   private shieldArc!: Phaser.Physics.Arcade.Sprite; // Shield arc that bounces the ball
   private shieldGraphics!: Phaser.GameObjects.Graphics; // Graphics object for drawing the shield
   private deathZone!: Phaser.GameObjects.Zone;
@@ -314,7 +316,9 @@ export class BrickBreaker extends Scene {
     }
     const worldBounds = this.cachedWorldBounds;
     const deltaTime = this.game.loop.delta;
-    const deltaTimeSeconds = deltaTime / 1000;
+    // Clamp deltaTime to prevent huge jumps when frame rate drops (max 50ms = 20fps minimum)
+    const clampedDeltaTime = Math.min(deltaTime, 50);
+    const deltaTimeSeconds = clampedDeltaTime / 1000;
 
     // Check Phaser keyboard first, then fallback to native keyState
     // Optimize: cache keyState reference
@@ -529,6 +533,13 @@ export class BrickBreaker extends Scene {
     ball: Phaser.Physics.Arcade.Sprite,
     shield: Phaser.Physics.Arcade.Sprite
   ) {
+    // Throttle collision handler to prevent multiple calls per frame
+    const now = this.time.now;
+    if (now - this.lastPaddleHitTime < 50) {
+      return; // Ignore if called within 50ms of last call
+    }
+    this.lastPaddleHitTime = now;
+
     handlePaddleHit(ball, shield, {
       ball: this.ball,
       shieldArc: this.shieldArc,
@@ -541,6 +552,23 @@ export class BrickBreaker extends Scene {
     _ball: Phaser.GameObjects.GameObject,
     brick: Phaser.GameObjects.GameObject
   ) {
+    // Throttle collision handler per brick to prevent multiple rapid hits
+    const now = this.time.now;
+    const lastHitTime = this.lastBrickHits.get(brick);
+    if (lastHitTime && now - lastHitTime < 50) {
+      return; // Ignore if same brick hit within 50ms
+    }
+    this.lastBrickHits.set(brick, now);
+
+    // Clean up old entries (older than 1 second) to prevent memory leak
+    if (this.lastBrickHits.size > 100) {
+      for (const [b, time] of this.lastBrickHits.entries()) {
+        if (now - time > 1000) {
+          this.lastBrickHits.delete(b);
+        }
+      }
+    }
+
     handleBrickHit(brick, {
       scene: this,
       gameState: this.gameState,

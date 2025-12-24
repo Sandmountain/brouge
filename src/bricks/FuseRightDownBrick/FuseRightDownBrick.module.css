@@ -31,6 +31,11 @@
   overflow: hidden;
 }
 
+/* For half-size blocks, extend horizontal line to reach full block width */
+:global(.brick.fuse-right-down[data-half-size="true"] .fuse-link .horizontal) {
+  width: 200%;
+}
+
 :global(.brick.fuse-right-down .fuse-link .horizontal::before) {
   content: "";
   position: absolute;

@@ -160,12 +160,34 @@ export const useDragToPlace = (
             col: number;
             row: number;
             type: BrickType;
+            halfSlot?: "left" | "right";
           }> = [];
 
           for (let i = 0; i < path.length; i++) {
             const current = path[i];
-            const prev = i > 0 ? path[i - 1] : null;
-            const next = i < path.length - 1 ? path[i + 1] : null;
+            // Look ahead to find the next point that's in a different cell or different half
+            let next: (PathPoint & { halfSlot?: "left" | "right" }) | null = null;
+            for (let j = i + 1; j < path.length; j++) {
+              const candidate = path[j];
+              // Different cell, or same cell but different half
+              if (candidate.col !== current.col || candidate.row !== current.row ||
+                  (candidate.halfSlot && current.halfSlot && candidate.halfSlot !== current.halfSlot)) {
+                next = candidate;
+                break;
+              }
+            }
+            
+            // Look back to find the previous point that's in a different cell or different half
+            let prev: (PathPoint & { halfSlot?: "left" | "right" }) | null = null;
+            for (let j = i - 1; j >= 0; j--) {
+              const candidate = path[j];
+              // Different cell, or same cell but different half
+              if (candidate.col !== current.col || candidate.row !== current.row ||
+                  (candidate.halfSlot && current.halfSlot && candidate.halfSlot !== current.halfSlot)) {
+                prev = candidate;
+                break;
+              }
+            }
 
             const fuseType = detectFuseType(current, prev, next);
             fuseBricks.push({ ...current, type: fuseType });

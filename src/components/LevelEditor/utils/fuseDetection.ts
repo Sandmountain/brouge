@@ -3,6 +3,7 @@ import { BrickType } from "../../../game/types";
 export interface PathPoint {
   col: number;
   row: number;
+  halfSlot?: "left" | "right";
 }
 
 export const detectFuseType = (
@@ -25,6 +26,18 @@ export const detectFuseType = (
   if (hasPrev) {
     colChange = current.col - prev.col;
     rowChange = current.row - prev.row;
+    
+    // If same cell but different half slots, treat as horizontal movement within cell
+    // Left to right = moving right, right to left = moving left
+    if (colChange === 0 && rowChange === 0 && current.halfSlot && prev.halfSlot && current.halfSlot !== prev.halfSlot) {
+      if (prev.halfSlot === "left" && current.halfSlot === "right") {
+        colChange = 1; // Moving right within cell
+        rowChange = 0;
+      } else if (prev.halfSlot === "right" && current.halfSlot === "left") {
+        colChange = -1; // Moving left within cell
+        rowChange = 0;
+      }
+    }
   }
 
   let nextColChange = 0;
@@ -33,6 +46,17 @@ export const detectFuseType = (
   if (hasNext) {
     nextColChange = next.col - current.col;
     nextRowChange = next.row - current.row;
+    
+    // If same cell but different half slots, treat as horizontal movement within cell
+    if (nextColChange === 0 && nextRowChange === 0 && current.halfSlot && next.halfSlot && current.halfSlot !== next.halfSlot) {
+      if (current.halfSlot === "left" && next.halfSlot === "right") {
+        nextColChange = 1; // Moving right within cell
+        nextRowChange = 0;
+      } else if (current.halfSlot === "right" && next.halfSlot === "left") {
+        nextColChange = -1; // Moving left within cell
+        nextRowChange = 0;
+      }
+    }
   }
 
   // Determine fuse type based on direction changes

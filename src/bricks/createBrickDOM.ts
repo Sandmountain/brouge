@@ -22,6 +22,14 @@ export function createBrickDOM(
   
   element.className = className;
   
+  // Add data attributes for half-size blocks to help with CSS styling
+  if (brickData.isHalfSize) {
+    element.setAttribute('data-half-size', 'true');
+    if (brickData.halfSizeAlign) {
+      element.setAttribute('data-half-align', brickData.halfSizeAlign);
+    }
+  }
+  
   // Set explicit size
   // Note: brickWidth is already the correct size (accounting for gap if half-size)
   // So we use it directly without further division
