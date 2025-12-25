@@ -266,15 +266,133 @@ export function explodeTNT(
     }
   });
 
-  // Create explosion effect
-  const explosion = scene.add.circle(brick.x, brick.y, 100, 0xff0000, 0.5);
+  // Create multiple explosion rings for depth
+  const explosion1 = scene.add.circle(brick.x, brick.y, 80, 0xff0000, 0.7);
   scene.tweens.add({
-    targets: explosion,
+    targets: explosion1,
+    alpha: 0,
+    scale: 2.5,
+    duration: 300,
+    ease: "Power2",
+    onComplete: () => explosion1.destroy(),
+  });
+
+  const explosion2 = scene.add.circle(brick.x, brick.y, 60, 0xff4400, 0.6);
+  scene.tweens.add({
+    targets: explosion2,
+    alpha: 0,
+    scale: 3,
+    duration: 350,
+    ease: "Power2",
+    onComplete: () => explosion2.destroy(),
+  });
+
+  const explosion3 = scene.add.circle(brick.x, brick.y, 40, 0xff8800, 0.8);
+  scene.tweens.add({
+    targets: explosion3,
     alpha: 0,
     scale: 2,
-    duration: 300,
-    onComplete: () => explosion.destroy(),
+    duration: 250,
+    ease: "Power2",
+    onComplete: () => explosion3.destroy(),
   });
+
+  // Create fiery spark particles shooting out in all directions
+  const sparkCount = 24; // More sparks for a bigger explosion
+  const fireColors = [
+    0xff0000, 0xff4400, 0xff8800, 0xffaa00, 0xffff00, 0xff6600,
+  ]; // Red to yellow gradient
+
+  for (let i = 0; i < sparkCount; i++) {
+    const angle = (i / sparkCount) * Math.PI * 2;
+    const distance = 80 + Math.random() * 60; // Random distance between 80-140
+    const sparkSize = 3 + Math.random() * 4; // Random size between 3-7
+
+    // Use fire colors
+    const color = fireColors[Math.floor(Math.random() * fireColors.length)];
+
+    const spark = scene.add.circle(brick.x, brick.y, sparkSize, color, 1);
+
+    // Random velocity variation for more chaotic explosion
+    const velocityVariation = 0.5;
+    const finalX =
+      brick.x +
+      Math.cos(angle) *
+        distance *
+        (1 + (Math.random() - 0.5) * velocityVariation);
+    const finalY =
+      brick.y +
+      Math.sin(angle) *
+        distance *
+        (1 + (Math.random() - 0.5) * velocityVariation);
+
+    scene.tweens.add({
+      targets: spark,
+      x: finalX,
+      y: finalY,
+      alpha: 0,
+      scale: 0,
+      duration: 400 + Math.random() * 200, // Random duration between 400-600ms
+      ease: "Power2",
+      onComplete: () => spark.destroy(),
+    });
+  }
+
+  // Create smaller fiery debris particles
+  const debrisCount = 16;
+  for (let i = 0; i < debrisCount; i++) {
+    const angle = (i / debrisCount) * Math.PI * 2 + Math.random() * 0.8; // Random offset
+    const distance = 50 + Math.random() * 50; // Random distance between 50-100
+    const debrisSize = 2 + Math.random() * 3; // Random size between 2-5
+
+    // Use darker fire colors for debris
+    const debrisColors = [0xff0000, 0xcc0000, 0xff4400, 0xff6600];
+    const color = debrisColors[Math.floor(Math.random() * debrisColors.length)];
+
+    const debris = scene.add.circle(brick.x, brick.y, debrisSize, color, 0.9);
+
+    const finalX = brick.x + Math.cos(angle) * distance;
+    const finalY = brick.y + Math.sin(angle) * distance;
+
+    scene.tweens.add({
+      targets: debris,
+      x: finalX,
+      y: finalY,
+      alpha: 0,
+      scale: 0,
+      duration: 350 + Math.random() * 150, // Random duration between 350-500ms
+      ease: "Power2",
+      onComplete: () => debris.destroy(),
+    });
+  }
+
+  // Create additional small embers for extra fire effect
+  const emberCount = 12;
+  for (let i = 0; i < emberCount; i++) {
+    const angle = Math.random() * Math.PI * 2; // Completely random angles
+    const distance = 60 + Math.random() * 80; // Random distance between 60-140
+    const emberSize = 1 + Math.random() * 2; // Random size between 1-3
+
+    // Use bright fire colors for embers
+    const emberColors = [0xffff00, 0xffaa00, 0xff8800, 0xffffff];
+    const color = emberColors[Math.floor(Math.random() * emberColors.length)];
+
+    const ember = scene.add.circle(brick.x, brick.y, emberSize, color, 0.8);
+
+    const finalX = brick.x + Math.cos(angle) * distance;
+    const finalY = brick.y + Math.sin(angle) * distance;
+
+    scene.tweens.add({
+      targets: ember,
+      x: finalX,
+      y: finalY,
+      alpha: 0,
+      scale: 0,
+      duration: 500 + Math.random() * 200, // Random duration between 500-700ms (longer for embers)
+      ease: "Power2",
+      onComplete: () => ember.destroy(),
+    });
+  }
 
   // Apply damage to all affected bricks
   bricksToDamage.forEach((damage, brickSprite) => {
