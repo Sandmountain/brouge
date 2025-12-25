@@ -21,6 +21,8 @@ import { destroyBrick } from "../logics/gameState/brickDestruction";
 import { dropItem } from "../logics/gameState/itemDrops";
 import { levelComplete } from "../logics/gameState/winCondition";
 import { animateShield } from "../logics/shield/shieldAnimation";
+import { EndlessModeManager } from "../logics/endlessMode/endlessModeManager";
+import { createBrickFromData } from "../logics/brickCreation/brickFactory";
 
 type BrickSprite = Phaser.GameObjects.DOMElement & { brickData?: BrickData };
 
@@ -89,6 +91,8 @@ export class BrickBreaker extends Scene {
   private dropChanceBonus: number = 0;
   private breakableBrickCount: { value: number } = { value: 0 };
   private isTestMode: boolean = false;
+  private isEndlessMode: boolean = false;
+  private endlessModeManager: any = null; // Will be EndlessModeManager
 
   constructor() {
     super("BrickBreaker");
@@ -98,6 +102,7 @@ export class BrickBreaker extends Scene {
     gameState?: GameState;
     levelData?: LevelData;
     isTestMode?: boolean;
+    isEndlessMode?: boolean;
   }) {
     if (data?.gameState) {
       this.gameState = { ...data.gameState };
@@ -107,6 +112,9 @@ export class BrickBreaker extends Scene {
     }
     if (data?.isTestMode) {
       this.isTestMode = data.isTestMode;
+    }
+    if (data?.isEndlessMode) {
+      this.isEndlessMode = data.isEndlessMode;
     }
 
     // Apply talent effects
@@ -372,16 +380,39 @@ export class BrickBreaker extends Scene {
       this.ball,
       this.deathZone,
       (_ball, _zone) => {
+        // Check if we should move blocks down in endless mode
+        if (this.isEndlessMode && this.endlessModeManager) {
+          const lostBricks = this.endlessModeManager.checkAndMoveBlocksDown(
+            0,
+            true
+          );
+          if (lostBricks > 0) {
+            // Lose a heart for each brick that reached bottom
+            this.gameState.lives -= lostBricks;
+            this.updateUI();
+
+            if (this.gameState.lives <= 0) {
+              this.scene.start("GameOver", { gameState: this.gameState });
+              return;
+            }
+          }
+        }
+
         handleBallMissed({
           scene: this,
           gameState: this.gameState,
           updateUI: () => this.updateUI(),
-          resetBall: () =>
+          resetBall: () => {
             resetBall({
               ball: this.ball,
               shieldArc: this.shieldArc,
               ballLaunched: this.ballLaunched,
-            }),
+            });
+            // Reset hit tracking for new shot
+            if (this.isEndlessMode && this.endlessModeManager) {
+              this.endlessModeManager.resetHitTracking();
+            }
+          },
         });
       },
       undefined,
@@ -884,6 +915,25 @@ export class BrickBreaker extends Scene {
     if (now - this.lastPaddleHitTime < 50) {
       return; // Ignore if called within 50ms of last call
     }
+
+    // Check if we should move blocks down in endless mode
+    if (this.isEndlessMode && this.endlessModeManager) {
+      const lostBricks = this.endlessModeManager.checkAndMoveBlocksDown(
+        now,
+        false
+      );
+      if (lostBricks > 0) {
+        // Lose a heart for each brick that reached bottom
+        this.gameState.lives -= lostBricks;
+        this.updateUI();
+
+        if (this.gameState.lives <= 0) {
+          this.scene.start("GameOver", { gameState: this.gameState });
+          return;
+        }
+      }
+    }
+
     this.lastPaddleHitTime = now;
 
     handlePaddleHit(ball, shield, {
@@ -913,6 +963,11 @@ export class BrickBreaker extends Scene {
           this.lastBrickHits.delete(b);
         }
       }
+    }
+
+    // Track brick hit for endless mode
+    if (this.isEndlessMode && this.endlessModeManager) {
+      this.endlessModeManager.onBrickHit();
     }
 
     handleBrickHit(brick, {
@@ -1003,7 +1058,31 @@ export class BrickBreaker extends Scene {
     // Always set world bounds to screen size (never based on level size)
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
-    if (this.levelData && this.levelData.bricks.length > 0) {
+    if (this.isEndlessMode) {
+      // Calculate brick dimensions for 16x16 grid
+      const gridWidth = 16;
+      const availableWidth = this.scale.width;
+
+      const paddingRatio = 0.055;
+      const brickWidth =
+        availableWidth / (gridWidth + (gridWidth - 1) * paddingRatio);
+      const padding = brickWidth * paddingRatio;
+      const brickHeight = brickWidth / 3;
+
+      // Initialize endless mode manager
+      this.endlessModeManager = new EndlessModeManager({
+        scene: this,
+        bricks: this.bricks,
+        breakableBrickCount: this.breakableBrickCount,
+        level: this.gameState.level,
+        brickWidth,
+        brickHeight,
+        padding,
+        createBrickFromData,
+      });
+
+      this.endlessModeManager.initialize();
+    } else if (this.levelData && this.levelData.bricks.length > 0) {
       createBricksFromLevel({
         scene: this,
         levelData: this.levelData,
