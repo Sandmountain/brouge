@@ -20,6 +20,16 @@ export function createBrickDOM(
     className += ` ${BRICK_CLASSES.portalOneWay}`;
   }
   
+  // For invisible bricks, add hidden class initially (will be removed when hit)
+  if (brickData.type === 'invisible') {
+    // Invisible bricks start hidden until hit
+    if (brickData.health >= brickData.maxHealth) {
+      className += ' hidden';
+    } else {
+      className += ' visible';
+    }
+  }
+  
   element.className = className;
   
   // Add data attributes for half-size blocks to help with CSS styling
@@ -114,11 +124,20 @@ export function createBrickDOM(
       element.appendChild(fuseV);
       break;
       
+    case 'invisible':
+      // Add glow effect when visible (in game mode)
+      if (brickData.health < brickData.maxHealth) {
+        const invisibleGlow = document.createElement('div');
+        invisibleGlow.className = 'invisible-glow game-mode';
+        element.appendChild(invisibleGlow);
+      }
+      break;
+      
     // Portal and Chaos use ::before and ::after pseudo-elements only
   }
   
-  // Add health badge for multi-hit bricks
-  if (brickData.health > 1 && brickData.health < 999) {
+  // Add health badge for multi-hit bricks (but not for invisible bricks)
+  if (brickData.health > 1 && brickData.health < 999 && brickData.type !== 'invisible') {
     const healthBadge = document.createElement('span');
     healthBadge.className = BRICK_CLASSES.healthBadge;
     healthBadge.textContent = brickData.health.toString();

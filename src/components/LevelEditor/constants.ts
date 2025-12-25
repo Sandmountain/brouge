@@ -60,6 +60,12 @@ export const BRICK_TYPES: {
     color: 0x4a2c1a,
     description: "Randomizes ball direction",
   },
+  {
+    type: "invisible",
+    name: "Invisible",
+    color: 0xc8c8ff,
+    description: "2 hits, invisible until hit",
+  },
 ];
 
 // Generate a 12x12 color palette (144 colors)

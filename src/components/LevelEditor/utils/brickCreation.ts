@@ -9,6 +9,9 @@ export interface PathPoint {
 }
 
 export const getBrickHealth = (type: BrickType): number => {
+  if (type === "invisible") {
+    return 2; // Invisible bricks require 2 hits
+  }
   switch (type) {
     case "default":
       return 1;

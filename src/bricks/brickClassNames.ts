@@ -18,6 +18,7 @@ export const BRICK_CLASSES = {
   portal: 'portal',
   portalOneWay: 'portal-one-way',
   chaos: 'chaos',
+  invisible: 'invisible',
   fuseHorizontal: 'fuse-horizontal',
   fuseLeftUp: 'fuse-left-up',
   fuseRightUp: 'fuse-right-up',

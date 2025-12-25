@@ -13,7 +13,7 @@ export interface Talent {
   icon?: string;
 }
 
-export type BrickType = 'default' | 'metal' | 'unbreakable' | 'tnt' | 'fuse-horizontal' | 'fuse-left-up' | 'fuse-right-up' | 'fuse-left-down' | 'fuse-right-down' | 'fuse-vertical' | 'gold' | 'boost' | 'portal' | 'chaos';
+export type BrickType = 'default' | 'metal' | 'unbreakable' | 'tnt' | 'fuse-horizontal' | 'fuse-left-up' | 'fuse-right-up' | 'fuse-left-down' | 'fuse-right-down' | 'fuse-vertical' | 'gold' | 'boost' | 'portal' | 'chaos' | 'invisible';
 
 export interface BrickData {
   x: number; // Pixel position (calculated from grid)

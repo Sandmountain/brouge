@@ -8,6 +8,7 @@ import { GoldBrick } from "./GoldBrick";
 import { BoostBrick } from "./BoostBrick";
 import { PortalBrick } from "./PortalBrick";
 import { ChaosBrick } from "./ChaosBrick";
+import { InvisibleBrick } from "./InvisibleBrick";
 import { FuseHorizontalBrick } from "./FuseHorizontalBrick";
 import { FuseLeftUpBrick } from "./FuseLeftUpBrick";
 import { FuseRightUpBrick } from "./FuseRightUpBrick";
@@ -46,6 +47,8 @@ export function Brick(props: BrickComponentProps) {
       return <PortalBrick {...commonProps} />;
     case "chaos":
       return <ChaosBrick {...commonProps} />;
+    case "invisible":
+      return <InvisibleBrick {...commonProps} />;
     case "fuse-horizontal":
       return <FuseHorizontalBrick {...commonProps} />;
     case "fuse-left-up":
