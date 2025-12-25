@@ -65,6 +65,25 @@ export class BrickBreaker extends Scene {
   private lastBrickHits: Map<Phaser.GameObjects.GameObject, number> = new Map();
   private shieldArc!: Phaser.Physics.Arcade.Sprite; // Shield arc that bounces the ball
   private shieldGraphics!: Phaser.GameObjects.Graphics; // Graphics object for drawing the shield
+  private playerShip!: Phaser.GameObjects.Sprite; // Player ship sprite
+  private shipFireLeft!: Phaser.GameObjects.Sprite; // Left wing fire animation sprite
+  private shipFireRight!: Phaser.GameObjects.Sprite; // Right wing fire animation sprite
+  private fireFrameIndex: number = 0; // Current frame index for fire animation (0 = fire06, 1 = fire07)
+  private fireFrameTimer: number = 0; // Timer for fire animation
+  private shipTrail: Phaser.GameObjects.Sprite[] = []; // Motion blur trail sprites
+  private fireTrailLeft: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for left fire
+  private fireTrailRight: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for right fire
+  private trailTimer: number = 0; // Timer for creating trail sprites
+  private previousShipX: number = 0; // Previous ship X position
+  private previousShipY: number = 0; // Previous ship Y position
+  private previousFireLeftX: number = 0; // Previous left fire X position
+  private previousFireLeftY: number = 0; // Previous left fire Y position
+  private previousFireRightX: number = 0; // Previous right fire X position
+  private previousFireRightY: number = 0; // Previous right fire Y position
+  private ballTrail: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for ball
+  private previousBallX: number = 0; // Previous ball X position
+  private previousBallY: number = 0; // Previous ball Y position
+  private ballTrailTimer: number = 0; // Timer for ball trail sprites
   private deathZone!: Phaser.GameObjects.Zone;
   private coinMultiplier: number = 1;
   private dropChanceBonus: number = 0;
@@ -109,6 +128,21 @@ export class BrickBreaker extends Scene {
     // Set background
     const bgColor = this.levelData?.backgroundColor || 0x1a1a2e;
     this.cameras.main.setBackgroundColor(bgColor);
+
+    // Enable smooth texture filtering for ship and fire sprites to reduce pixelation
+    const shipTexture = this.textures.get("playerShip2_blue");
+    if (shipTexture) {
+      shipTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+
+    // Set linear filtering for all fire textures
+    for (let i = 0; i <= 19; i++) {
+      const fireNum = i.toString().padStart(2, "0");
+      const fireTexture = this.textures.get(`fire${fireNum}`);
+      if (fireTexture) {
+        fireTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      }
+    }
 
     // Create shield arc (shallow arc, less round) - energy force field
     // We'll create this as a sprite that we can animate
@@ -156,11 +190,93 @@ export class BrickBreaker extends Scene {
     // Draw initial shield immediately so it's visible
     this.animateShield();
 
-    // Create ball
+    // Create player ship sprite - positioned below the shield
+    this.playerShip = this.add.sprite(
+      this.shieldArc.x,
+      this.shieldArc.y + 20, // Position below the shield
+      "playerShip2_blue"
+    );
+    this.playerShip.setDepth(5); // Below shield but above background
+    this.playerShip.setOrigin(0.5, 0.5); // Center origin
+    this.playerShip.setScale(0.5); // 50% smaller
+    // Enable smooth texture filtering to reduce pixelation
+    if (this.playerShip.texture) {
+      this.playerShip.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+
+    // Initialize trail variables
+    this.previousShipX = this.shieldArc.x;
+    this.previousShipY = this.shieldArc.y + 20;
+    this.previousFireLeftX = this.shieldArc.x - 10;
+    this.previousFireLeftY = this.shieldArc.y + 40;
+    this.previousFireRightX = this.shieldArc.x + 10;
+    this.previousFireRightY = this.shieldArc.y + 40;
+    this.trailTimer = 0;
+
+    // Create left wing fire effect sprite
+    this.shipFireLeft = this.add.sprite(
+      this.shieldArc.x - 10, // Left side of ship
+      this.shieldArc.y + 40, // Position below the wings
+      "fire06"
+    );
+    this.shipFireLeft.setDepth(6); // Above ship but below shield
+    this.shipFireLeft.setOrigin(0.5, 0.5);
+    this.shipFireLeft.setScale(0.6); // 50% smaller
+    this.shipFireLeft.setRotation(Math.PI); // Rotate 180 degrees (pointing down)
+    this.shipFireLeft.setVisible(true); // Ensure visible
+    // Enable smooth texture filtering to reduce pixelation
+    if (this.shipFireLeft.texture) {
+      this.shipFireLeft.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+
+    // Create right wing fire effect sprite
+    this.shipFireRight = this.add.sprite(
+      this.shieldArc.x + 10, // Right side of ship
+      this.shieldArc.y + 40, // Position below the wings
+      "fire06"
+    );
+    this.shipFireRight.setDepth(6); // Above ship but below shield
+    this.shipFireRight.setOrigin(0.5, 0.5);
+    this.shipFireRight.setScale(0.6); // 50% smaller
+    this.shipFireRight.setRotation(Math.PI); // Rotate 180 degrees (pointing down)
+    this.shipFireRight.setVisible(true); // Ensure visible
+    // Enable smooth texture filtering to reduce pixelation
+    if (this.shipFireRight.texture) {
+      this.shipFireRight.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+
+    // Initialize fire animation variables
+    this.fireFrameIndex = 0; // 0 = fire06, 1 = fire07
+    this.fireFrameTimer = 0;
+
+    // Create ball with gray appearance and border (like the image)
     const ballGraphics = this.add.graphics();
-    ballGraphics.fillStyle(0xffffff);
-    ballGraphics.fillCircle(10, 10, 10);
-    ballGraphics.generateTexture("ball", 20, 20);
+    const ballSize = 10;
+    const ballCenter = 11; // Center in 22x22 texture
+    const borderWidth = 1;
+
+    // Light gray border/frame (outer circle) - lighter, more towards white
+    ballGraphics.fillStyle(0xcccccc);
+    ballGraphics.fillCircle(ballCenter, ballCenter, ballSize + borderWidth);
+
+    // Main gray circle - lighter, more towards white
+    ballGraphics.fillStyle(0xaaaaaa);
+    ballGraphics.fillCircle(ballCenter, ballCenter, ballSize);
+
+    // Lighter gray highlight on top-left for depth - more subtle
+    ballGraphics.fillStyle(0xbbbbbb);
+    ballGraphics.fillCircle(ballCenter - 2, ballCenter - 2, ballSize - 3);
+
+    // Dimmed highlight on top-left (glossy effect) - lighter
+    ballGraphics.fillStyle(0xdddddd, 0.5);
+    ballGraphics.fillCircle(ballCenter - 3, ballCenter - 3, 4);
+
+    // Smaller dimmed spot for extra shine - lighter
+    ballGraphics.fillStyle(0xeeeeee, 0.6);
+    ballGraphics.fillCircle(ballCenter - 2, ballCenter - 2, 2);
+
+    // Generate texture with exact size to ensure it's perfectly round
+    ballGraphics.generateTexture("ball", 22, 22);
     ballGraphics.destroy();
 
     // Create ball - start it connected to the shield arc
@@ -379,13 +495,232 @@ export class BrickBreaker extends Scene {
         )
       );
       this.shieldArc.setX(newX);
+
+      // Update ship position to follow shield
+      this.playerShip.setX(newX);
+      // Fire positions will be updated below based on rotation
     }
+
+    // Calculate rotation based on velocity (tilt when moving)
+    // Max rotation: 15 degrees (about 0.26 radians) at max speed
+    const maxRotation = 15 * (Math.PI / 180); // Convert to radians
+    const normalizedVelocity = this.paddleVelocity / this.paddleSpeed; // -1 to 1
+    const targetRotation = normalizedVelocity * maxRotation;
+
+    // Smoothly interpolate rotation for a more natural feel
+    const rotationSpeed = 8; // How fast rotation changes (higher = faster)
+    const currentShipRotation = this.playerShip.rotation;
+    const rotationDiff = targetRotation - currentShipRotation;
+    const newRotation =
+      currentShipRotation +
+      rotationDiff * Math.min(1, rotationSpeed * deltaTimeSeconds);
+
+    // Apply rotation to ship, shield arc, and fires
+    this.playerShip.setRotation(newRotation);
+    this.shieldArc.setRotation(newRotation);
+
+    // Update fire positions to account for ship rotation
+    // Calculate fire positions relative to ship center with rotation
+    const shipX = this.shieldArc.x;
+    const shipY = this.shieldArc.y + 20; // Ship is 20px below shield
+    const fireOffsetX = 10; // Distance from center to wing
+    const fireOffsetY = 20; // Distance from ship center to fire (fire is 20px below ship)
+    const cosRot = Math.cos(newRotation);
+    const sinRot = Math.sin(newRotation);
+
+    // Left fire position (rotated around ship center)
+    const leftFireX = shipX + (-fireOffsetX * cosRot - fireOffsetY * sinRot);
+    const leftFireY = shipY + (-fireOffsetX * sinRot + fireOffsetY * cosRot);
+
+    // Right fire position (rotated around ship center)
+    const rightFireX = shipX + (fireOffsetX * cosRot - fireOffsetY * sinRot);
+    const rightFireY = shipY + (fireOffsetX * sinRot + fireOffsetY * cosRot);
+
+    this.shipFireLeft.setPosition(leftFireX, leftFireY);
+    this.shipFireLeft.setRotation(Math.PI + newRotation); // Fire rotation (180 degrees) + ship rotation
+
+    this.shipFireRight.setPosition(rightFireX, rightFireY);
+    this.shipFireRight.setRotation(Math.PI + newRotation); // Fire rotation (180 degrees) + ship rotation
+
+    // Motion blur trail effect
+    const currentShipX = this.shieldArc.x;
+    const currentShipY = this.shieldArc.y + 20;
+    const shipMoved =
+      Math.abs(currentShipX - this.previousShipX) > 0.5 ||
+      Math.abs(currentShipY - this.previousShipY) > 0.5;
+
+    if (shipMoved) {
+      this.trailTimer += deltaTime;
+      // Create a trail sprite every 16ms (60fps) when moving
+      if (this.trailTimer >= 16) {
+        this.trailTimer = 0;
+
+        // Create a semi-transparent copy of the ship at previous position
+        const trailSprite = this.add.sprite(
+          this.previousShipX,
+          this.previousShipY,
+          "playerShip2_blue"
+        );
+        trailSprite.setDepth(4); // Below ship but above background
+        trailSprite.setOrigin(0.5, 0.5);
+        trailSprite.setScale(0.5);
+        trailSprite.setRotation(this.playerShip.rotation);
+        trailSprite.setAlpha(0.1); // Much more subtle - very low opacity
+        trailSprite.setTint(0x88aaff); // Subtle blue tint for blur effect
+
+        this.shipTrail.push(trailSprite);
+
+        // Fade out and remove trail sprites
+        this.tweens.add({
+          targets: trailSprite,
+          alpha: 0,
+          duration: 200, // Fade out over 200ms
+          ease: "Power2",
+          onComplete: () => {
+            trailSprite.destroy();
+            const index = this.shipTrail.indexOf(trailSprite);
+            if (index > -1) {
+              this.shipTrail.splice(index, 1);
+            }
+          },
+        });
+      }
+    }
+
+    // Update previous position
+    this.previousShipX = currentShipX;
+    this.previousShipY = currentShipY;
+
+    // Motion blur trail effect for fires
+    const fireLeftMoved =
+      Math.abs(leftFireX - this.previousFireLeftX) > 0.5 ||
+      Math.abs(leftFireY - this.previousFireLeftY) > 0.5;
+    const fireRightMoved =
+      Math.abs(rightFireX - this.previousFireRightX) > 0.5 ||
+      Math.abs(rightFireY - this.previousFireRightY) > 0.5;
+
+    if (fireLeftMoved && this.trailTimer >= 16) {
+      // Create trail for left fire
+      const fireTrailSprite = this.add.sprite(
+        this.previousFireLeftX,
+        this.previousFireLeftY,
+        `fire${this.fireFrameIndex === 0 ? "06" : "07"}`
+      );
+      fireTrailSprite.setDepth(3); // Below fire but above background
+      fireTrailSprite.setOrigin(0.5, 0.5);
+      fireTrailSprite.setScale(0.6);
+      fireTrailSprite.setRotation(Math.PI + this.playerShip.rotation);
+      fireTrailSprite.setAlpha(0.12); // Much more subtle - very low opacity
+      fireTrailSprite.setTint(0xffaa88); // Orange/red tint for fire blur
+
+      this.fireTrailLeft.push(fireTrailSprite);
+
+      this.tweens.add({
+        targets: fireTrailSprite,
+        alpha: 0,
+        duration: 150, // Fade out faster than ship trail
+        ease: "Power2",
+        onComplete: () => {
+          fireTrailSprite.destroy();
+          const index = this.fireTrailLeft.indexOf(fireTrailSprite);
+          if (index > -1) {
+            this.fireTrailLeft.splice(index, 1);
+          }
+        },
+      });
+    }
+
+    if (fireRightMoved && this.trailTimer >= 16) {
+      // Create trail for right fire
+      const fireTrailSprite = this.add.sprite(
+        this.previousFireRightX,
+        this.previousFireRightY,
+        `fire${this.fireFrameIndex === 0 ? "06" : "07"}`
+      );
+      fireTrailSprite.setDepth(3); // Below fire but above background
+      fireTrailSprite.setOrigin(0.5, 0.5);
+      fireTrailSprite.setScale(0.6);
+      fireTrailSprite.setRotation(Math.PI + this.playerShip.rotation);
+      fireTrailSprite.setAlpha(0.12); // Much more subtle - very low opacity
+      fireTrailSprite.setTint(0xffaa88); // Orange/red tint for fire blur
+
+      this.fireTrailRight.push(fireTrailSprite);
+
+      this.tweens.add({
+        targets: fireTrailSprite,
+        alpha: 0,
+        duration: 150, // Fade out faster than ship trail
+        ease: "Power2",
+        onComplete: () => {
+          fireTrailSprite.destroy();
+          const index = this.fireTrailRight.indexOf(fireTrailSprite);
+          if (index > -1) {
+            this.fireTrailRight.splice(index, 1);
+          }
+        },
+      });
+    }
+
+    // Update previous fire positions
+    this.previousFireLeftX = leftFireX;
+    this.previousFireLeftY = leftFireY;
+    this.previousFireRightX = rightFireX;
+    this.previousFireRightY = rightFireY;
+
+    // Ball motion blur trail effect (longer than ship trail)
+    const ballMoved =
+      Math.abs(this.ball.x - this.previousBallX) > 0.5 ||
+      Math.abs(this.ball.y - this.previousBallY) > 0.5;
+
+    if (ballMoved && this.ballLaunched.value) {
+      this.ballTrailTimer += deltaTime;
+      // Create a trail sprite every 8ms (120fps) for smoother, longer trail
+      if (this.ballTrailTimer >= 8) {
+        this.ballTrailTimer = 0;
+
+        // Create a subtle blue trail sprite at previous position
+        const ballTrailSprite = this.add.sprite(
+          this.previousBallX,
+          this.previousBallY,
+          "ball"
+        );
+        ballTrailSprite.setDepth(2); // Below ball but above background
+        ballTrailSprite.setOrigin(0.5, 0.5);
+        ballTrailSprite.setAlpha(0.08); // Much more subtle - very low opacity
+        ballTrailSprite.setTint(0x88aaff); // Subtle blue tint
+
+        this.ballTrail.push(ballTrailSprite);
+
+        // Fade out and remove trail sprites (longer duration than ship)
+        this.tweens.add({
+          targets: ballTrailSprite,
+          alpha: 0,
+          scale: 0.7, // Slightly shrink as it fades
+          duration: 400, // Longer fade out (400ms vs 200ms for ship)
+          ease: "Power2",
+          onComplete: () => {
+            ballTrailSprite.destroy();
+            const index = this.ballTrail.indexOf(ballTrailSprite);
+            if (index > -1) {
+              this.ballTrail.splice(index, 1);
+            }
+          },
+        });
+      }
+    }
+
+    // Update previous ball position
+    this.previousBallX = this.ball.x;
+    this.previousBallY = this.ball.y;
 
     // If ball is not launched, keep it connected to the shield arc
     if (!this.ballLaunched.value) {
       this.ball.setX(this.shieldArc.x);
       this.ball.setY(this.shieldArc.y - 15); // Position above the shield arc
       this.ball.setVelocity(0, 0); // Keep it stationary
+      // Reset trail position when ball is not launched
+      this.previousBallX = this.ball.x;
+      this.previousBallY = this.ball.y;
     }
 
     // Animate shield arc - pulsating energy force field
@@ -393,6 +728,17 @@ export class BrickBreaker extends Scene {
       shieldArc: this.shieldArc,
       shieldGraphics: this.shieldGraphics,
     });
+
+    // Animate fire effect - rotate between fire06 and fire07
+    this.fireFrameTimer += deltaTime;
+    const fireFrameDuration = 100; // 100ms per frame (10 fps for smoother alternation)
+    if (this.fireFrameTimer >= fireFrameDuration) {
+      this.fireFrameTimer = 0;
+      this.fireFrameIndex = (this.fireFrameIndex + 1) % 2; // Cycle 0-1 (fire06 and fire07)
+      const fireNum = this.fireFrameIndex === 0 ? "06" : "07";
+      this.shipFireLeft.setTexture(`fire${fireNum}`);
+      this.shipFireRight.setTexture(`fire${fireNum}`);
+    }
 
     // Launch ball with spacebar or W
     // Only check if ball hasn't been launched yet (optimization)

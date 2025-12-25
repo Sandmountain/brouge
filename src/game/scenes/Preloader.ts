@@ -34,6 +34,16 @@ export class Preloader extends Scene
 
         this.load.image('logo', 'logo.png');
         this.load.image('star', 'star.png');
+        
+        // Load player ship
+        this.load.setPath('assets/kenney_space-shooter-redux/PNG');
+        this.load.image('playerShip2_blue', 'playerShip2_blue.png');
+        
+        // Load fire sprites for ship combustion
+        for (let i = 0; i <= 19; i++) {
+            const fireNum = i.toString().padStart(2, '0');
+            this.load.image(`fire${fireNum}`, `Effects/fire${fireNum}.png`);
+        }
     }
 
     create ()
