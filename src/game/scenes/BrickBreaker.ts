@@ -1,7 +1,10 @@
 import { EventBus } from "../EventBus";
 import { Scene } from "phaser";
 import { GameState, BrickData, LevelData } from "../types";
-import { createGradientBackground } from "../utils/backgroundUtils";
+import {
+  createAnimatedBackground,
+  BackgroundManager,
+} from "../utils/backgroundUtils";
 // Game logic modules
 import { explodeTNT } from "../logics/explosions/tntExplosion";
 import { explodeFuse } from "../logics/explosions/fuseExplosion";
@@ -37,7 +40,7 @@ export class BrickBreaker extends Scene {
     S: Phaser.Input.Keyboard.Key;
     D: Phaser.Input.Keyboard.Key;
   };
-  
+
   private gameState: GameState = {
     coins: 0,
     lives: 3,
@@ -47,14 +50,14 @@ export class BrickBreaker extends Scene {
   };
 
   private levelData?: LevelData;
-  
+
   private uiText!: {
     coins: Phaser.GameObjects.Text;
     lives: Phaser.GameObjects.Text;
     level: Phaser.GameObjects.Text;
     score: Phaser.GameObjects.Text;
   };
-  
+
   private ballSpeed: number = 400;
   private paddleSpeed: number = 500;
   private paddleAcceleration: number = 3000; // pixels per second squared
@@ -95,6 +98,9 @@ export class BrickBreaker extends Scene {
   private isEndlessMode: boolean = false;
   private endlessModeManager: any = null; // Will be EndlessModeManager
 
+  // Background manager
+  private backgroundManager?: BackgroundManager;
+
   constructor() {
     super("BrickBreaker");
   }
@@ -117,7 +123,7 @@ export class BrickBreaker extends Scene {
     if (data?.isEndlessMode) {
       this.isEndlessMode = data.isEndlessMode;
     }
-    
+
     // Apply talent effects
     if (this.gameState.talents.includes("paddle-size")) {
       this.paddleWidth = 144; // 20% increase
@@ -134,8 +140,8 @@ export class BrickBreaker extends Scene {
   }
 
   create() {
-    // Create gradient background
-    createGradientBackground(this);
+    // Create animated background (reusable function)
+    this.backgroundManager = createAnimatedBackground(this);
 
     // Enable smooth texture filtering for ship and fire sprites to reduce pixelation
     const shipTexture = this.textures.get("playerShip2_blue");
@@ -151,7 +157,7 @@ export class BrickBreaker extends Scene {
         fireTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
       }
     }
-    
+
     // Create shield arc (shallow arc, less round) - energy force field
     // We'll create this as a sprite that we can animate
     const shieldWidth = this.paddleWidth; // Keep the same width as before (120px)
@@ -160,13 +166,13 @@ export class BrickBreaker extends Scene {
     // This creates a subtle curve that doesn't extend beyond the height
     // Using: R ≈ w² / (8h) for a shallow arc
     const shieldRadius = (shieldWidth * shieldWidth) / (8 * shieldHeight);
-    
+
     // Create initial shield texture (will be animated in update loop)
     // Just create empty texture, animation will draw it immediately
     const shieldGraphics = this.add.graphics();
     shieldGraphics.generateTexture("shield", shieldWidth, shieldHeight);
     shieldGraphics.destroy();
-    
+
     // Create shield arc sprite
     this.shieldArc = this.physics.add.sprite(
       this.scale.width / 2,
@@ -177,7 +183,7 @@ export class BrickBreaker extends Scene {
     this.shieldArc.setImmovable(true);
     // Set collision shape to match the arc (rectangular collision for shallow arc)
     this.shieldArc.setSize(shieldWidth, shieldHeight);
-    
+
     // Store shield properties for animation
     interface ShieldWithProps extends Phaser.Physics.Arcade.Sprite {
       shieldWidth?: number;
@@ -190,14 +196,14 @@ export class BrickBreaker extends Scene {
     shieldWithProps.shieldHeight = shieldHeight;
     shieldWithProps.shieldRadius = shieldRadius;
     shieldWithProps.pulsePhase = 0;
-    
+
     // Create graphics object for drawing the shield (added to scene, not as texture)
     this.shieldGraphics = this.add.graphics();
     this.shieldGraphics.setDepth(10); // Draw above other objects
-    
+
     // Draw initial shield immediately so it's visible
     this.animateShield();
-    
+
     // Create player ship sprite - positioned below the shield
     this.playerShip = this.add.sprite(
       this.shieldArc.x,
@@ -286,7 +292,7 @@ export class BrickBreaker extends Scene {
     // Generate texture with exact size to ensure it's perfectly round
     ballGraphics.generateTexture("ball", 22, 22);
     ballGraphics.destroy();
-    
+
     // Create ball - start it connected to the shield arc
     this.ball = this.physics.add.sprite(
       this.scale.width / 2,
@@ -298,16 +304,16 @@ export class BrickBreaker extends Scene {
     this.ball.setCircle(10);
     // Initially, ball has no velocity (connected to shield)
     this.ball.setVelocity(0, 0);
-    
+
     // Setup input - ensure keyboard is available
     const keyboard = this.input.keyboard;
     if (!keyboard) {
       return;
     }
-    
+
     // Create cursor keys
     this.cursors = keyboard.createCursorKeys();
-    
+
     // Create WASD keys
     this.wasdKeys = keyboard.addKeys("W,S,A,D") as {
       W: Phaser.Input.Keyboard.Key;
@@ -315,24 +321,24 @@ export class BrickBreaker extends Scene {
       S: Phaser.Input.Keyboard.Key;
       D: Phaser.Input.Keyboard.Key;
     };
-    
+
     // Add native keyboard event listeners as fallback
     const keyState: { [key: string]: boolean } = {};
-    
+
     const handleKeyDown = (event: KeyboardEvent) => {
       keyState[event.key.toLowerCase()] = true;
       keyState[event.code.toLowerCase()] = true;
     };
-    
+
     const handleKeyUp = (event: KeyboardEvent) => {
       keyState[event.key.toLowerCase()] = false;
       keyState[event.code.toLowerCase()] = false;
     };
-    
+
     // Add event listeners to window (works even if canvas doesn't have focus)
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-    
+
     // Store keyState and cleanup function
     interface BrickBreakerWithKeyState extends BrickBreaker {
       keyState?: { [key: string]: boolean };
@@ -344,10 +350,10 @@ export class BrickBreaker extends Scene {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-    
+
     // Create bricks (this will set world bounds based on level grid)
     this.createBricks();
-    
+
     // Create death zone at bottom (positioned after world bounds are set)
     const worldBounds = this.physics.world.bounds;
     this.deathZone = this.add.zone(
@@ -358,7 +364,7 @@ export class BrickBreaker extends Scene {
     );
     this.physics.world.enable(this.deathZone);
     (this.deathZone.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
-    
+
     // Setup collisions
     // Ball collides with shield arc, not the ship
     this.physics.add.collider(
@@ -418,10 +424,10 @@ export class BrickBreaker extends Scene {
       undefined,
       this
     );
-    
+
     // Create UI
     this.createUI();
-    
+
     // Set up mouse input for launching ball and focus canvas
     this.input.on("pointerdown", () => {
       // Focus canvas for keyboard input
@@ -429,30 +435,35 @@ export class BrickBreaker extends Scene {
         this.game.canvas.setAttribute("tabindex", "0");
         this.game.canvas.focus();
       }
-      
+
       // Launch ball if not already launched
       if (!this.ballLaunched.value) {
         this.launchBall();
       }
     });
-    
+
     // Ensure canvas has focus on scene start
     if (this.game.canvas) {
       this.game.canvas.setAttribute("tabindex", "0");
       this.game.canvas.focus();
     }
-    
+
     EventBus.emit("current-scene-ready", this);
   }
 
-  update() {
+  update(_time: number, delta: number) {
+    // Update animated background
+    if (this.backgroundManager) {
+      this.backgroundManager.update(_time, delta);
+    }
+
     // Store ball velocity before collisions (for portal teleportation)
     // Only update if ball exists and has velocity (optimization)
     if (this.ball?.body) {
       const ballBody = this.ball.body as Phaser.Physics.Arcade.Body;
       if (ballBody.velocity.x !== 0 || ballBody.velocity.y !== 0) {
-      this.prevBallVelocity.x = ballBody.velocity.x;
-      this.prevBallVelocity.y = ballBody.velocity.y;
+        this.prevBallVelocity.x = ballBody.velocity.x;
+        this.prevBallVelocity.y = ballBody.velocity.y;
       }
     }
 
@@ -466,7 +477,7 @@ export class BrickBreaker extends Scene {
     // Clamp deltaTime to prevent huge jumps when frame rate drops (max 50ms = 20fps minimum)
     const clampedDeltaTime = Math.min(deltaTime, 50);
     const deltaTimeSeconds = clampedDeltaTime / 1000;
-    
+
     // Check Phaser keyboard first, then fallback to native keyState
     // Optimize: cache keyState reference
     interface BrickBreakerWithKeyState extends BrickBreaker {
@@ -474,15 +485,15 @@ export class BrickBreaker extends Scene {
     }
     const self = this as BrickBreakerWithKeyState;
     const keyState = self.keyState || {};
-    
+
     // Optimize: reduce redundant checks by checking Phaser keys first (faster)
-    const leftPressed = 
+    const leftPressed =
       this.cursors?.left?.isDown ||
       this.wasdKeys?.A?.isDown ||
       keyState["a"] ||
       keyState["arrowleft"] ||
       keyState["keya"];
-    const rightPressed = 
+    const rightPressed =
       this.cursors?.right?.isDown ||
       this.wasdKeys?.D?.isDown ||
       keyState["d"] ||
@@ -743,7 +754,7 @@ export class BrickBreaker extends Scene {
     // Update previous ball position
     this.previousBallX = this.ball.x;
     this.previousBallY = this.ball.y;
-    
+
     // If ball is not launched, keep it connected to the shield arc
     if (!this.ballLaunched.value) {
       this.ball.setX(this.shieldArc.x);
@@ -753,7 +764,7 @@ export class BrickBreaker extends Scene {
       this.previousBallX = this.ball.x;
       this.previousBallY = this.ball.y;
     }
-    
+
     // Animate shield arc - pulsating energy force field
     animateShield({
       shieldArc: this.shieldArc,
@@ -770,11 +781,11 @@ export class BrickBreaker extends Scene {
       this.shipFireLeft.setTexture(`fire${fireNum}`);
       this.shipFireRight.setTexture(`fire${fireNum}`);
     }
-    
+
     // Launch ball with spacebar or W
     // Only check if ball hasn't been launched yet (optimization)
     if (!this.ballLaunched.value) {
-    const spacePressed = 
+      const spacePressed =
         this.cursors?.space?.isDown ||
         this.wasdKeys?.W?.isDown ||
         keyState[" "] ||
@@ -782,11 +793,11 @@ export class BrickBreaker extends Scene {
         keyState["w"] ||
         keyState["keyw"];
       if (spacePressed) {
-      this.launchBall();
-    }
+        this.launchBall();
+      }
     }
   }
-  
+
   private animateShield() {
     interface ShieldWithProps extends Phaser.Physics.Arcade.Sprite {
       shieldWidth?: number;
@@ -797,33 +808,33 @@ export class BrickBreaker extends Scene {
     const shield = this.shieldArc as ShieldWithProps;
     if (!shield.shieldWidth || !shield.shieldHeight || !shield.shieldRadius)
       return;
-    
+
     shield.pulsePhase = (shield.pulsePhase || 0) + 0.05; // Animation speed
     if (shield.pulsePhase > Math.PI * 2) shield.pulsePhase = 0;
-    
+
     const shieldWidth = shield.shieldWidth;
     const shieldHeight = shield.shieldHeight;
     const pulseIntensity = Math.sin(shield.pulsePhase);
     const baseThickness = 2;
     const pulseThickness = baseThickness + pulseIntensity * 0.5; // Subtle pulse between 1.5-2.5px
     const glowIntensity = 0.85 + pulseIntensity * 0.15; // Subtle pulse opacity 0.85-1.0 (humming, not fading)
-    
+
     // Clear and redraw shield with current pulse state
     this.shieldGraphics.clear();
-    
+
     // Position graphics at shield arc position (sprite origin is center by default)
     const shieldX = this.shieldArc.x;
     const shieldY = this.shieldArc.y;
-    
+
     // Draw a subtle arc that fits within the 10px height bounds
     // The arc should be drawn from left edge to right edge, curving slightly upward
     const leftX = shieldX - shieldWidth / 2;
     const rightX = shieldX + shieldWidth / 2;
     const bottomY = shieldY + shieldHeight / 2; // Bottom of sprite
-    
+
     // Use thinner lines for a subtle effect with gentle humming pulse
     const lineThickness = Math.max(1.5, pulseThickness); // Subtle pulse (1.5-2.5px)
-    
+
     // Draw the arc as a curved line using multiple segments to create a subtle curve
     // Create a simple arc using line segments that fits within 10px height
     const segments = 20;
@@ -844,7 +855,7 @@ export class BrickBreaker extends Scene {
       this.shieldGraphics.lineTo(x, y);
     }
     this.shieldGraphics.strokePath();
-    
+
     // Main shield arc (brightest, with humming glow)
     this.shieldGraphics.lineStyle(lineThickness, 0x4ecdc4, glowIntensity);
     this.shieldGraphics.beginPath();
@@ -857,7 +868,7 @@ export class BrickBreaker extends Scene {
       this.shieldGraphics.lineTo(x, y);
     }
     this.shieldGraphics.strokePath();
-    
+
     // Inner core (brightest center, always visible)
     this.shieldGraphics.lineStyle(
       lineThickness * 0.7,
@@ -874,7 +885,7 @@ export class BrickBreaker extends Scene {
       this.shieldGraphics.lineTo(x, y);
     }
     this.shieldGraphics.strokePath();
-    
+
     // Add subtle energy particles/sparks along the arc (smaller and fewer)
     const particleCount = 4; // Fewer particles
     for (let i = 0; i < particleCount; i++) {
@@ -886,7 +897,7 @@ export class BrickBreaker extends Scene {
       const particlePhase = shield.pulsePhase + i * 0.5;
       // More subtle particle glow - stays visible, just gently pulses
       const particleGlow = 0.7 + Math.sin(particlePhase) * 0.3; // Pulse between 0.4-1.0, but we'll keep it higher
-      
+
       this.shieldGraphics.fillStyle(
         0xffffff,
         Math.max(0.5, particleGlow * 0.8)
@@ -929,8 +940,8 @@ export class BrickBreaker extends Scene {
 
         if (this.gameState.lives <= 0) {
           this.scene.start("GameOver", { gameState: this.gameState });
-      return;
-    }
+          return;
+        }
       }
     }
 
@@ -1011,7 +1022,7 @@ export class BrickBreaker extends Scene {
       damageNeighbors: (b, d, m) => this.damageNeighbors(b, d, m),
     });
   }
-  
+
   private damageNeighbors(
     _brick: BrickSprite,
     brickData: BrickData,
@@ -1054,10 +1065,10 @@ export class BrickBreaker extends Scene {
   private createBricks() {
     this.bricks = this.physics.add.staticGroup();
     this.breakableBrickCount.value = 0;
-    
+
     // Always set world bounds to screen size (never based on level size)
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
-    
+
     if (this.isEndlessMode) {
       // Calculate brick dimensions for 16x16 grid
       const gridWidth = 16;
@@ -1091,7 +1102,7 @@ export class BrickBreaker extends Scene {
         shieldArc: this.shieldArc,
         ball: this.ball,
       });
-        } else {
+    } else {
       createDefaultLevel({
         scene: this,
         levelData: { name: "Default", width: 10, height: 8, bricks: [] },

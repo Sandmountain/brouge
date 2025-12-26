@@ -827,3 +827,134 @@ export function updatePlanetParallax(
   });
 }
 
+/**
+ * Background manager interface for reusable background setup
+ */
+export interface BackgroundManager {
+  update: (time: number, delta: number) => void;
+  destroy: () => void;
+}
+
+/**
+ * Creates a complete animated background with stars, planets, and smoke
+ * This is a reusable function that can be called from any scene
+ * @param scene The Phaser scene to add the background to
+ * @param options Optional configuration options
+ * @returns BackgroundManager with update and destroy methods
+ */
+export function createAnimatedBackground(
+  scene: Scene,
+  options?: {
+    starCount?: number;
+    staticStarCount?: number;
+    planetCount?: number;
+    smokeCount?: number;
+  }
+): BackgroundManager {
+  const starCount = options?.starCount ?? 80;
+  const staticStarCount = options?.staticStarCount ?? 40;
+  const planetCount = options?.planetCount ?? 2;
+  const smokeCount = options?.smokeCount ?? 12;
+
+  // Create gradient background
+  createGradientBackground(scene);
+
+  // Create parallax stars (moving stars)
+  const stars = createParallaxStars(scene, starCount, 1, 10);
+  
+  // Create static stars (farthest background layer, don't move)
+  const staticStars = createStaticStars(scene, staticStarCount);
+  const allStars = [...stars, ...staticStars];
+
+  // Create planets
+  const planets = createPlanets(scene, planetCount);
+
+  // Create background smoke (positioned near star clusters and above planets)
+  const smokeParticles = createBackgroundSmoke(scene, smokeCount, allStars, planets);
+
+  // Mouse tracking for parallax
+  let mouseX = 0;
+  let mouseY = 0;
+  let targetMouseX = 0;
+  let targetMouseY = 0;
+
+  // Set up mouse tracking for parallax effect
+  const pointerMoveHandler = (pointer: Phaser.Input.Pointer) => {
+    const centerX = scene.scale.width / 2;
+    const centerY = scene.scale.height / 2;
+    targetMouseX = (pointer.x - centerX) / centerX;
+    targetMouseY = (pointer.y - centerY) / centerY;
+    
+    targetMouseX = Phaser.Math.Clamp(targetMouseX, -1, 1);
+    targetMouseY = Phaser.Math.Clamp(targetMouseY, -1, 1);
+  };
+
+  const pointerOutHandler = () => {
+    targetMouseX = 0;
+    targetMouseY = 0;
+  };
+
+  scene.input.on("pointermove", pointerMoveHandler);
+  scene.input.on("pointerout", pointerOutHandler);
+
+  // Update function
+  const update = (time: number, delta: number) => {
+    // Smoothly interpolate mouse position
+    const smoothingSpeed = 0.05;
+    const smoothingFactor = 1 - Math.pow(1 - smoothingSpeed, delta / 16);
+    
+    mouseX = Phaser.Math.Linear(mouseX, targetMouseX, smoothingFactor);
+    mouseY = Phaser.Math.Linear(mouseY, targetMouseY, smoothingFactor);
+
+    // Update stars with continuous movement and mouse parallax
+    if (allStars && allStars.length > 0) {
+      updateStarParallax(
+        allStars,
+        delta,
+        mouseX,
+        mouseY,
+        25,
+        scene.scale.width,
+        scene.scale.height
+      );
+    }
+
+    // Update background smoke with parallax
+    if (smokeParticles && smokeParticles.length > 0) {
+      updateBackgroundSmoke(
+        smokeParticles,
+        delta,
+        mouseX,
+        mouseY,
+        15,
+        scene.scale.width,
+        scene.scale.height
+      );
+    }
+
+    // Update planets with parallax
+    if (planets && planets.length > 0) {
+      updatePlanetParallax(
+        planets,
+        delta,
+        mouseX,
+        mouseY,
+        30,
+        scene.scale.width,
+        scene.scale.height
+      );
+    }
+  };
+
+  // Cleanup function
+  const destroy = () => {
+    scene.input.off("pointermove", pointerMoveHandler);
+    scene.input.off("pointerout", pointerOutHandler);
+  };
+
+  return {
+    update,
+    destroy,
+  };
+}
+

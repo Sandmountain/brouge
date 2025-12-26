@@ -1,70 +1,20 @@
 import { GameObjects, Scene } from "phaser";
 
 import { EventBus } from "../EventBus";
-import {
-  createGradientBackground,
-  createParallaxStars,
-  createStaticStars,
-  createBackgroundSmoke,
-  createPlanets,
-  updateStarParallax,
-  updateBackgroundSmoke,
-  updatePlanetParallax,
-  StarData,
-  SmokeData,
-  PlanetData,
-} from "../utils/backgroundUtils";
+import { createAnimatedBackground, BackgroundManager } from "../utils/backgroundUtils";
 
 export class MainMenu extends Scene {
   background: GameObjects.Image;
   title: GameObjects.Text;
-  private stars: StarData[] = [];
-  private smokeParticles: SmokeData[] = [];
-  private planets: PlanetData[] = [];
-  private mouseX: number = 0;
-  private mouseY: number = 0;
-  private targetMouseX: number = 0;
-  private targetMouseY: number = 0;
+  private backgroundManager?: BackgroundManager;
 
   constructor() {
     super("MainMenu");
   }
 
   create() {
-    // Create gradient background
-    createGradientBackground(this);
-
-    // Create parallax stars (moving stars)
-    this.stars = createParallaxStars(this, 80, 1, 10);
-    
-    // Create static stars (farthest background layer, don't move)
-    const staticStars = createStaticStars(this, 40);
-    this.stars = [...this.stars, ...staticStars];
-
-    // Create planets (2 planets) with very different z-space
-    this.planets = createPlanets(this, 2);
-
-    // Create background smoke for ambiance (positioned near star clusters and above planets)
-    this.smokeParticles = createBackgroundSmoke(this, 12, this.stars, this.planets);
-
-    // Set up mouse tracking for parallax effect (additive to default movement)
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      // Normalize mouse position to -1 to 1 range (0 is center)
-      const centerX = this.scale.width / 2;
-      const centerY = this.scale.height / 2;
-      this.targetMouseX = (pointer.x - centerX) / centerX;
-      this.targetMouseY = (pointer.y - centerY) / centerY;
-      
-      // Clamp to -1 to 1
-      this.targetMouseX = Phaser.Math.Clamp(this.targetMouseX, -1, 1);
-      this.targetMouseY = Phaser.Math.Clamp(this.targetMouseY, -1, 1);
-    });
-
-    // Smoothly return mouse parallax to center when mouse leaves (but keep default movement)
-    this.input.on("pointerout", () => {
-      this.targetMouseX = 0;
-      this.targetMouseY = 0;
-    });
+    // Create animated background (reusable function)
+    this.backgroundManager = createAnimatedBackground(this);
 
     // Get screen center
     const centerX = this.scale.width / 2;
@@ -431,59 +381,9 @@ export class MainMenu extends Scene {
   }
 
   update(time: number, delta: number) {
-    // Smoothly interpolate mouse position to prevent janky movement
-    // Use delta-based interpolation for frame-rate independent smoothing
-    const smoothingSpeed = 0.05; // Adjust this (0-1) - lower = smoother but slower response
-    const smoothingFactor = 1 - Math.pow(1 - smoothingSpeed, delta / 16); // Normalize to 60fps
-    
-    this.mouseX = Phaser.Math.Linear(
-      this.mouseX,
-      this.targetMouseX,
-      smoothingFactor
-    );
-    this.mouseY = Phaser.Math.Linear(
-      this.mouseY,
-      this.targetMouseY,
-      smoothingFactor
-    );
-
-    // Update stars with continuous movement and mouse parallax
-    if (this.stars && this.stars.length > 0) {
-      updateStarParallax(
-        this.stars,
-        delta,
-        this.mouseX,
-        this.mouseY,
-        25, // Reduced parallax for more subtle mouse effect
-        this.scale.width,
-        this.scale.height
-      );
-    }
-
-    // Update background smoke with parallax and rotation
-    if (this.smokeParticles && this.smokeParticles.length > 0) {
-      updateBackgroundSmoke(
-        this.smokeParticles,
-        delta,
-        this.mouseX,
-        this.mouseY,
-        15, // Reduced parallax for more subtle mouse effect
-        this.scale.width,
-        this.scale.height
-      );
-    }
-
-    // Update planets with parallax
-    if (this.planets && this.planets.length > 0) {
-      updatePlanetParallax(
-        this.planets,
-        delta,
-        this.mouseX,
-        this.mouseY,
-        30, // Parallax offset for planets
-        this.scale.width,
-        this.scale.height
-      );
+    // Update animated background
+    if (this.backgroundManager) {
+      this.backgroundManager.update(time, delta);
     }
   }
 }
