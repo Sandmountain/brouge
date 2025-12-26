@@ -5,6 +5,7 @@ import {
   createAnimatedBackground,
   BackgroundManager,
 } from "../utils/backgroundUtils";
+import { createPlayerManager, PlayerManager } from "../utils/playerManager";
 // Game logic modules
 import { explodeTNT } from "../logics/explosions/tntExplosion";
 import { explodeFuse } from "../logics/explosions/fuseExplosion";
@@ -24,7 +25,6 @@ import {
 import { destroyBrick } from "../logics/gameState/brickDestruction";
 import { dropItem } from "../logics/gameState/itemDrops";
 import { levelComplete } from "../logics/gameState/winCondition";
-import { animateShield } from "../logics/shield/shieldAnimation";
 import { EndlessModeManager } from "../logics/endlessMode/endlessModeManager";
 import { createBrickFromData } from "../logics/brickCreation/brickFactory";
 
@@ -62,30 +62,12 @@ export class BrickBreaker extends Scene {
   private paddleSpeed: number = 500;
   private paddleAcceleration: number = 3000; // pixels per second squared
   private paddleDeceleration: number = 2500; // pixels per second squared
-  private paddleVelocity: number = 0; // current velocity in pixels per second
   private paddleWidth: number = 120;
   private ballLaunched: { value: boolean } = { value: false };
   private prevBallVelocity: { x: number; y: number } = { x: 0, y: 0 };
   private cachedWorldBounds?: Phaser.Geom.Rectangle;
   private lastPaddleHitTime: number = 0;
   private lastBrickHits: Map<Phaser.GameObjects.GameObject, number> = new Map();
-  private shieldArc!: Phaser.Physics.Arcade.Sprite; // Shield arc that bounces the ball
-  private shieldGraphics!: Phaser.GameObjects.Graphics; // Graphics object for drawing the shield
-  private playerShip!: Phaser.GameObjects.Sprite; // Player ship sprite
-  private shipFireLeft!: Phaser.GameObjects.Sprite; // Left wing fire animation sprite
-  private shipFireRight!: Phaser.GameObjects.Sprite; // Right wing fire animation sprite
-  private fireFrameIndex: number = 0; // Current frame index for fire animation (0 = fire06, 1 = fire07)
-  private fireFrameTimer: number = 0; // Timer for fire animation
-  private shipTrail: Phaser.GameObjects.Sprite[] = []; // Motion blur trail sprites
-  private fireTrailLeft: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for left fire
-  private fireTrailRight: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for right fire
-  private trailTimer: number = 0; // Timer for creating trail sprites
-  private previousShipX: number = 0; // Previous ship X position
-  private previousShipY: number = 0; // Previous ship Y position
-  private previousFireLeftX: number = 0; // Previous left fire X position
-  private previousFireLeftY: number = 0; // Previous left fire Y position
-  private previousFireRightX: number = 0; // Previous right fire X position
-  private previousFireRightY: number = 0; // Previous right fire Y position
   private ballTrail: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for ball
   private previousBallX: number = 0; // Previous ball X position
   private previousBallY: number = 0; // Previous ball Y position
@@ -100,6 +82,8 @@ export class BrickBreaker extends Scene {
 
   // Background manager
   private backgroundManager?: BackgroundManager;
+  // Player manager
+  private playerManager?: PlayerManager;
 
   constructor() {
     super("BrickBreaker");
@@ -143,125 +127,15 @@ export class BrickBreaker extends Scene {
     // Create animated background (reusable function)
     this.backgroundManager = createAnimatedBackground(this);
 
-    // Enable smooth texture filtering for ship and fire sprites to reduce pixelation
-    const shipTexture = this.textures.get("playerShip2_blue");
-    if (shipTexture) {
-      shipTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }
-
-    // Set linear filtering for all fire textures
-    for (let i = 0; i <= 19; i++) {
-      const fireNum = i.toString().padStart(2, "0");
-      const fireTexture = this.textures.get(`fire${fireNum}`);
-      if (fireTexture) {
-        fireTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-      }
-    }
-
-    // Create shield arc (shallow arc, less round) - energy force field
-    // We'll create this as a sprite that we can animate
-    const shieldWidth = this.paddleWidth; // Keep the same width as before (120px)
-    const shieldHeight = 10; // Small height for shallow arc
-    // For a very shallow arc that fits within 10px height, use a much larger radius
-    // This creates a subtle curve that doesn't extend beyond the height
-    // Using: R ≈ w² / (8h) for a shallow arc
-    const shieldRadius = (shieldWidth * shieldWidth) / (8 * shieldHeight);
-
-    // Create initial shield texture (will be animated in update loop)
-    // Just create empty texture, animation will draw it immediately
-    const shieldGraphics = this.add.graphics();
-    shieldGraphics.generateTexture("shield", shieldWidth, shieldHeight);
-    shieldGraphics.destroy();
-
-    // Create shield arc sprite
-    this.shieldArc = this.physics.add.sprite(
-      this.scale.width / 2,
-      this.scale.height - 50,
-      "shield"
-    );
-    this.shieldArc.setCollideWorldBounds(true);
-    this.shieldArc.setImmovable(true);
-    // Set collision shape to match the arc (rectangular collision for shallow arc)
-    this.shieldArc.setSize(shieldWidth, shieldHeight);
-
-    // Store shield properties for animation
-    interface ShieldWithProps extends Phaser.Physics.Arcade.Sprite {
-      shieldWidth?: number;
-      shieldHeight?: number;
-      shieldRadius?: number;
-      pulsePhase?: number;
-    }
-    const shieldWithProps = this.shieldArc as ShieldWithProps;
-    shieldWithProps.shieldWidth = shieldWidth;
-    shieldWithProps.shieldHeight = shieldHeight;
-    shieldWithProps.shieldRadius = shieldRadius;
-    shieldWithProps.pulsePhase = 0;
-
-    // Create graphics object for drawing the shield (added to scene, not as texture)
-    this.shieldGraphics = this.add.graphics();
-    this.shieldGraphics.setDepth(10); // Draw above other objects
-
-    // Draw initial shield immediately so it's visible
-    this.animateShield();
-
-    // Create player ship sprite - positioned below the shield
-    this.playerShip = this.add.sprite(
-      this.shieldArc.x,
-      this.shieldArc.y + 20, // Position below the shield
-      "playerShip2_blue"
-    );
-    this.playerShip.setDepth(5); // Below shield but above background
-    this.playerShip.setOrigin(0.5, 0.5); // Center origin
-    this.playerShip.setScale(0.5); // 50% smaller
-    // Enable smooth texture filtering to reduce pixelation
-    if (this.playerShip.texture) {
-      this.playerShip.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }
-
-    // Initialize trail variables
-    this.previousShipX = this.shieldArc.x;
-    this.previousShipY = this.shieldArc.y + 20;
-    this.previousFireLeftX = this.shieldArc.x - 10;
-    this.previousFireLeftY = this.shieldArc.y + 40;
-    this.previousFireRightX = this.shieldArc.x + 10;
-    this.previousFireRightY = this.shieldArc.y + 40;
-    this.trailTimer = 0;
-
-    // Create left wing fire effect sprite
-    this.shipFireLeft = this.add.sprite(
-      this.shieldArc.x - 10, // Left side of ship
-      this.shieldArc.y + 40, // Position below the wings
-      "fire06"
-    );
-    this.shipFireLeft.setDepth(6); // Above ship but below shield
-    this.shipFireLeft.setOrigin(0.5, 0.5);
-    this.shipFireLeft.setScale(0.6); // 50% smaller
-    this.shipFireLeft.setRotation(Math.PI); // Rotate 180 degrees (pointing down)
-    this.shipFireLeft.setVisible(true); // Ensure visible
-    // Enable smooth texture filtering to reduce pixelation
-    if (this.shipFireLeft.texture) {
-      this.shipFireLeft.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }
-
-    // Create right wing fire effect sprite
-    this.shipFireRight = this.add.sprite(
-      this.shieldArc.x + 10, // Right side of ship
-      this.shieldArc.y + 40, // Position below the wings
-      "fire06"
-    );
-    this.shipFireRight.setDepth(6); // Above ship but below shield
-    this.shipFireRight.setOrigin(0.5, 0.5);
-    this.shipFireRight.setScale(0.6); // 50% smaller
-    this.shipFireRight.setRotation(Math.PI); // Rotate 180 degrees (pointing down)
-    this.shipFireRight.setVisible(true); // Ensure visible
-    // Enable smooth texture filtering to reduce pixelation
-    if (this.shipFireRight.texture) {
-      this.shipFireRight.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }
-
-    // Initialize fire animation variables
-    this.fireFrameIndex = 0; // 0 = fire06, 1 = fire07
-    this.fireFrameTimer = 0;
+    // Create player manager (handles shield, ship, fire, trails)
+    this.playerManager = createPlayerManager(this, {
+      paddleWidth: this.paddleWidth,
+      paddleSpeed: this.paddleSpeed,
+      paddleAcceleration: this.paddleAcceleration,
+      paddleDeceleration: this.paddleDeceleration,
+      initialX: this.scale.width / 2,
+      initialY: this.scale.height - 50,
+    });
 
     // Create ball with gray appearance and border (like the image)
     const ballGraphics = this.add.graphics();
@@ -369,7 +243,7 @@ export class BrickBreaker extends Scene {
     // Ball collides with shield arc, not the ship
     this.physics.add.collider(
       this.ball,
-      this.shieldArc,
+      this.playerManager.shieldArc,
       this.hitPaddle as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
       undefined,
       this
@@ -411,7 +285,7 @@ export class BrickBreaker extends Scene {
           resetBall: () => {
             resetBall({
               ball: this.ball,
-              shieldArc: this.shieldArc,
+              shieldArc: this.playerManager!.shieldArc,
               ballLaunched: this.ballLaunched,
             });
             // Reset hit tracking for new shot
@@ -458,7 +332,6 @@ export class BrickBreaker extends Scene {
     }
 
     // Store ball velocity before collisions (for portal teleportation)
-    // Only update if ball exists and has velocity (optimization)
     if (this.ball?.body) {
       const ballBody = this.ball.body as Phaser.Physics.Arcade.Body;
       if (ballBody.velocity.x !== 0 || ballBody.velocity.y !== 0) {
@@ -467,278 +340,62 @@ export class BrickBreaker extends Scene {
       }
     }
 
-    // Shield arc movement (left/right) with acceleration
-    // Cache world bounds (they don't change during gameplay)
+    // Cache world bounds
     if (!this.cachedWorldBounds) {
       this.cachedWorldBounds = this.physics.world.bounds;
     }
     const worldBounds = this.cachedWorldBounds;
-    const deltaTime = this.game.loop.delta;
-    // Clamp deltaTime to prevent huge jumps when frame rate drops (max 50ms = 20fps minimum)
-    const clampedDeltaTime = Math.min(deltaTime, 50);
-    const deltaTimeSeconds = clampedDeltaTime / 1000;
 
-    // Check Phaser keyboard first, then fallback to native keyState
-    // Optimize: cache keyState reference
+    // Get keyboard state
     interface BrickBreakerWithKeyState extends BrickBreaker {
       keyState?: { [key: string]: boolean };
     }
     const self = this as BrickBreakerWithKeyState;
     const keyState = self.keyState || {};
 
-    // Optimize: reduce redundant checks by checking Phaser keys first (faster)
-    const leftPressed =
-      this.cursors?.left?.isDown ||
-      this.wasdKeys?.A?.isDown ||
-      keyState["a"] ||
-      keyState["arrowleft"] ||
-      keyState["keya"];
-    const rightPressed =
-      this.cursors?.right?.isDown ||
-      this.wasdKeys?.D?.isDown ||
-      keyState["d"] ||
-      keyState["arrowright"] ||
-      keyState["keyd"];
-
-    // Apply acceleration or deceleration
-    if (leftPressed) {
-      // Accelerate left (negative velocity)
-      this.paddleVelocity -= this.paddleAcceleration * deltaTimeSeconds;
-      this.paddleVelocity = Math.max(-this.paddleSpeed, this.paddleVelocity);
-    } else if (rightPressed) {
-      // Accelerate right (positive velocity)
-      this.paddleVelocity += this.paddleAcceleration * deltaTimeSeconds;
-      this.paddleVelocity = Math.min(this.paddleSpeed, this.paddleVelocity);
-    } else {
-      // Decelerate when no keys pressed (only if there's velocity to decelerate)
-      if (Math.abs(this.paddleVelocity) > 0.1) {
-        if (this.paddleVelocity > 0) {
-          this.paddleVelocity -= this.paddleDeceleration * deltaTimeSeconds;
-          this.paddleVelocity = Math.max(0, this.paddleVelocity);
-        } else {
-          this.paddleVelocity += this.paddleDeceleration * deltaTimeSeconds;
-          this.paddleVelocity = Math.min(0, this.paddleVelocity);
-        }
-      } else {
-        // Snap to zero if velocity is very small
-        this.paddleVelocity = 0;
-      }
-    }
-
-    // Apply velocity to position
-    const moveDistance = this.paddleVelocity * deltaTimeSeconds;
-    if (Math.abs(moveDistance) > 0.1) {
-      // Only move if velocity is significant
-      const newX = Math.max(
-        worldBounds.x + this.paddleWidth / 2,
-        Math.min(
-          worldBounds.right - this.paddleWidth / 2,
-          this.shieldArc.x + moveDistance
-        )
-      );
-      this.shieldArc.setX(newX);
-
-      // Update ship position to follow shield
-      this.playerShip.setX(newX);
-      // Fire positions will be updated below based on rotation
-    }
-
-    // Calculate rotation based on velocity (tilt when moving)
-    // Max rotation: 15 degrees (about 0.26 radians) at max speed
-    const maxRotation = 15 * (Math.PI / 180); // Convert to radians
-    const normalizedVelocity = this.paddleVelocity / this.paddleSpeed; // -1 to 1
-    const targetRotation = normalizedVelocity * maxRotation;
-
-    // Smoothly interpolate rotation for a more natural feel
-    const rotationSpeed = 8; // How fast rotation changes (higher = faster)
-    const currentShipRotation = this.playerShip.rotation;
-    const rotationDiff = targetRotation - currentShipRotation;
-    const newRotation =
-      currentShipRotation +
-      rotationDiff * Math.min(1, rotationSpeed * deltaTimeSeconds);
-
-    // Apply rotation to ship, shield arc, and fires
-    this.playerShip.setRotation(newRotation);
-    this.shieldArc.setRotation(newRotation);
-
-    // Update fire positions to account for ship rotation
-    // Calculate fire positions relative to ship center with rotation
-    const shipX = this.shieldArc.x;
-    const shipY = this.shieldArc.y + 20; // Ship is 20px below shield
-    const fireOffsetX = 10; // Distance from center to wing
-    const fireOffsetY = 20; // Distance from ship center to fire (fire is 20px below ship)
-    const cosRot = Math.cos(newRotation);
-    const sinRot = Math.sin(newRotation);
-
-    // Left fire position (rotated around ship center)
-    const leftFireX = shipX + (-fireOffsetX * cosRot - fireOffsetY * sinRot);
-    const leftFireY = shipY + (-fireOffsetX * sinRot + fireOffsetY * cosRot);
-
-    // Right fire position (rotated around ship center)
-    const rightFireX = shipX + (fireOffsetX * cosRot - fireOffsetY * sinRot);
-    const rightFireY = shipY + (fireOffsetX * sinRot + fireOffsetY * cosRot);
-
-    this.shipFireLeft.setPosition(leftFireX, leftFireY);
-    this.shipFireLeft.setRotation(Math.PI + newRotation); // Fire rotation (180 degrees) + ship rotation
-
-    this.shipFireRight.setPosition(rightFireX, rightFireY);
-    this.shipFireRight.setRotation(Math.PI + newRotation); // Fire rotation (180 degrees) + ship rotation
-
-    // Motion blur trail effect
-    const currentShipX = this.shieldArc.x;
-    const currentShipY = this.shieldArc.y + 20;
-    const shipMoved =
-      Math.abs(currentShipX - this.previousShipX) > 0.5 ||
-      Math.abs(currentShipY - this.previousShipY) > 0.5;
-
-    if (shipMoved) {
-      this.trailTimer += deltaTime;
-      // Create a trail sprite every 16ms (60fps) when moving
-      if (this.trailTimer >= 16) {
-        this.trailTimer = 0;
-
-        // Create a semi-transparent copy of the ship at previous position
-        const trailSprite = this.add.sprite(
-          this.previousShipX,
-          this.previousShipY,
-          "playerShip2_blue"
-        );
-        trailSprite.setDepth(4); // Below ship but above background
-        trailSprite.setOrigin(0.5, 0.5);
-        trailSprite.setScale(0.5);
-        trailSprite.setRotation(this.playerShip.rotation);
-        trailSprite.setAlpha(0.1); // Much more subtle - very low opacity
-        trailSprite.setTint(0x88aaff); // Subtle blue tint for blur effect
-
-        this.shipTrail.push(trailSprite);
-
-        // Fade out and remove trail sprites
-        this.tweens.add({
-          targets: trailSprite,
-          alpha: 0,
-          duration: 200, // Fade out over 200ms
-          ease: "Power2",
-          onComplete: () => {
-            trailSprite.destroy();
-            const index = this.shipTrail.indexOf(trailSprite);
-            if (index > -1) {
-              this.shipTrail.splice(index, 1);
-            }
-          },
-        });
-      }
-    }
-
-    // Update previous position
-    this.previousShipX = currentShipX;
-    this.previousShipY = currentShipY;
-
-    // Motion blur trail effect for fires
-    const fireLeftMoved =
-      Math.abs(leftFireX - this.previousFireLeftX) > 0.5 ||
-      Math.abs(leftFireY - this.previousFireLeftY) > 0.5;
-    const fireRightMoved =
-      Math.abs(rightFireX - this.previousFireRightX) > 0.5 ||
-      Math.abs(rightFireY - this.previousFireRightY) > 0.5;
-
-    if (fireLeftMoved && this.trailTimer >= 16) {
-      // Create trail for left fire
-      const fireTrailSprite = this.add.sprite(
-        this.previousFireLeftX,
-        this.previousFireLeftY,
-        `fire${this.fireFrameIndex === 0 ? "06" : "07"}`
-      );
-      fireTrailSprite.setDepth(3); // Below fire but above background
-      fireTrailSprite.setOrigin(0.5, 0.5);
-      fireTrailSprite.setScale(0.6);
-      fireTrailSprite.setRotation(Math.PI + this.playerShip.rotation);
-      fireTrailSprite.setAlpha(0.12); // Much more subtle - very low opacity
-      fireTrailSprite.setTint(0xffaa88); // Orange/red tint for fire blur
-
-      this.fireTrailLeft.push(fireTrailSprite);
-
-      this.tweens.add({
-        targets: fireTrailSprite,
-        alpha: 0,
-        duration: 150, // Fade out faster than ship trail
-        ease: "Power2",
-        onComplete: () => {
-          fireTrailSprite.destroy();
-          const index = this.fireTrailLeft.indexOf(fireTrailSprite);
-          if (index > -1) {
-            this.fireTrailLeft.splice(index, 1);
-          }
+    // Update player manager (handles shield, ship, fire, trails, movement)
+    if (this.playerManager) {
+      this.playerManager.update(
+        delta,
+        {
+          cursors: this.cursors,
+          wasdKeys: this.wasdKeys,
+          keyState,
         },
-      });
-    }
-
-    if (fireRightMoved && this.trailTimer >= 16) {
-      // Create trail for right fire
-      const fireTrailSprite = this.add.sprite(
-        this.previousFireRightX,
-        this.previousFireRightY,
-        `fire${this.fireFrameIndex === 0 ? "06" : "07"}`
+        worldBounds,
+        this.ballLaunched,
+        this.ball
       );
-      fireTrailSprite.setDepth(3); // Below fire but above background
-      fireTrailSprite.setOrigin(0.5, 0.5);
-      fireTrailSprite.setScale(0.6);
-      fireTrailSprite.setRotation(Math.PI + this.playerShip.rotation);
-      fireTrailSprite.setAlpha(0.12); // Much more subtle - very low opacity
-      fireTrailSprite.setTint(0xffaa88); // Orange/red tint for fire blur
-
-      this.fireTrailRight.push(fireTrailSprite);
-
-      this.tweens.add({
-        targets: fireTrailSprite,
-        alpha: 0,
-        duration: 150, // Fade out faster than ship trail
-        ease: "Power2",
-        onComplete: () => {
-          fireTrailSprite.destroy();
-          const index = this.fireTrailRight.indexOf(fireTrailSprite);
-          if (index > -1) {
-            this.fireTrailRight.splice(index, 1);
-          }
-        },
-      });
     }
 
-    // Update previous fire positions
-    this.previousFireLeftX = leftFireX;
-    this.previousFireLeftY = leftFireY;
-    this.previousFireRightX = rightFireX;
-    this.previousFireRightY = rightFireY;
-
-    // Ball motion blur trail effect (longer than ship trail)
+    // Ball motion blur trail effect
     const ballMoved =
       Math.abs(this.ball.x - this.previousBallX) > 0.5 ||
       Math.abs(this.ball.y - this.previousBallY) > 0.5;
 
     if (ballMoved && this.ballLaunched.value) {
+      const deltaTime = this.game.loop.delta;
       this.ballTrailTimer += deltaTime;
-      // Create a trail sprite every 8ms (120fps) for smoother, longer trail
       if (this.ballTrailTimer >= 8) {
         this.ballTrailTimer = 0;
 
-        // Create a subtle blue trail sprite at previous position
         const ballTrailSprite = this.add.sprite(
           this.previousBallX,
           this.previousBallY,
           "ball"
         );
-        ballTrailSprite.setDepth(2); // Below ball but above background
+        ballTrailSprite.setDepth(2);
         ballTrailSprite.setOrigin(0.5, 0.5);
-        ballTrailSprite.setAlpha(0.08); // Much more subtle - very low opacity
-        ballTrailSprite.setTint(0x88aaff); // Subtle blue tint
+        ballTrailSprite.setAlpha(0.08);
+        ballTrailSprite.setTint(0x88aaff);
 
         this.ballTrail.push(ballTrailSprite);
 
-        // Fade out and remove trail sprites (longer duration than ship)
         this.tweens.add({
           targets: ballTrailSprite,
           alpha: 0,
-          scale: 0.7, // Slightly shrink as it fades
-          duration: 400, // Longer fade out (400ms vs 200ms for ship)
+          scale: 0.7,
+          duration: 400,
           ease: "Power2",
           onComplete: () => {
             ballTrailSprite.destroy();
@@ -755,35 +412,7 @@ export class BrickBreaker extends Scene {
     this.previousBallX = this.ball.x;
     this.previousBallY = this.ball.y;
 
-    // If ball is not launched, keep it connected to the shield arc
-    if (!this.ballLaunched.value) {
-      this.ball.setX(this.shieldArc.x);
-      this.ball.setY(this.shieldArc.y - 15); // Position above the shield arc
-      this.ball.setVelocity(0, 0); // Keep it stationary
-      // Reset trail position when ball is not launched
-      this.previousBallX = this.ball.x;
-      this.previousBallY = this.ball.y;
-    }
-
-    // Animate shield arc - pulsating energy force field
-    animateShield({
-      shieldArc: this.shieldArc,
-      shieldGraphics: this.shieldGraphics,
-    });
-
-    // Animate fire effect - rotate between fire06 and fire07
-    this.fireFrameTimer += deltaTime;
-    const fireFrameDuration = 100; // 100ms per frame (10 fps for smoother alternation)
-    if (this.fireFrameTimer >= fireFrameDuration) {
-      this.fireFrameTimer = 0;
-      this.fireFrameIndex = (this.fireFrameIndex + 1) % 2; // Cycle 0-1 (fire06 and fire07)
-      const fireNum = this.fireFrameIndex === 0 ? "06" : "07";
-      this.shipFireLeft.setTexture(`fire${fireNum}`);
-      this.shipFireRight.setTexture(`fire${fireNum}`);
-    }
-
     // Launch ball with spacebar or W
-    // Only check if ball hasn't been launched yet (optimization)
     if (!this.ballLaunched.value) {
       const spacePressed =
         this.cursors?.space?.isDown ||
@@ -798,119 +427,11 @@ export class BrickBreaker extends Scene {
     }
   }
 
-  private animateShield() {
-    interface ShieldWithProps extends Phaser.Physics.Arcade.Sprite {
-      shieldWidth?: number;
-      shieldHeight?: number;
-      shieldRadius?: number;
-      pulsePhase?: number;
-    }
-    const shield = this.shieldArc as ShieldWithProps;
-    if (!shield.shieldWidth || !shield.shieldHeight || !shield.shieldRadius)
-      return;
-
-    shield.pulsePhase = (shield.pulsePhase || 0) + 0.05; // Animation speed
-    if (shield.pulsePhase > Math.PI * 2) shield.pulsePhase = 0;
-
-    const shieldWidth = shield.shieldWidth;
-    const shieldHeight = shield.shieldHeight;
-    const pulseIntensity = Math.sin(shield.pulsePhase);
-    const baseThickness = 2;
-    const pulseThickness = baseThickness + pulseIntensity * 0.5; // Subtle pulse between 1.5-2.5px
-    const glowIntensity = 0.85 + pulseIntensity * 0.15; // Subtle pulse opacity 0.85-1.0 (humming, not fading)
-
-    // Clear and redraw shield with current pulse state
-    this.shieldGraphics.clear();
-
-    // Position graphics at shield arc position (sprite origin is center by default)
-    const shieldX = this.shieldArc.x;
-    const shieldY = this.shieldArc.y;
-
-    // Draw a subtle arc that fits within the 10px height bounds
-    // The arc should be drawn from left edge to right edge, curving slightly upward
-    const leftX = shieldX - shieldWidth / 2;
-    const rightX = shieldX + shieldWidth / 2;
-    const bottomY = shieldY + shieldHeight / 2; // Bottom of sprite
-
-    // Use thinner lines for a subtle effect with gentle humming pulse
-    const lineThickness = Math.max(1.5, pulseThickness); // Subtle pulse (1.5-2.5px)
-
-    // Draw the arc as a curved line using multiple segments to create a subtle curve
-    // Create a simple arc using line segments that fits within 10px height
-    const segments = 20;
-    // Outer glow (very subtle, always visible)
-    this.shieldGraphics.lineStyle(
-      lineThickness + 0.5,
-      0x4ecdc4,
-      glowIntensity * 0.4
-    );
-    this.shieldGraphics.beginPath();
-    this.shieldGraphics.moveTo(leftX, bottomY);
-    for (let i = 1; i <= segments; i++) {
-      const t = i / segments;
-      const x = leftX + (rightX - leftX) * t;
-      // Simple quadratic curve: y = bottomY - (shieldHeight * 4 * t * (1 - t))
-      const curveHeight = shieldHeight * 0.8 + pulseIntensity * 0.5; // Very subtle pulse
-      const y = bottomY - curveHeight * 4 * t * (1 - t);
-      this.shieldGraphics.lineTo(x, y);
-    }
-    this.shieldGraphics.strokePath();
-
-    // Main shield arc (brightest, with humming glow)
-    this.shieldGraphics.lineStyle(lineThickness, 0x4ecdc4, glowIntensity);
-    this.shieldGraphics.beginPath();
-    this.shieldGraphics.moveTo(leftX, bottomY);
-    for (let i = 1; i <= segments; i++) {
-      const t = i / segments;
-      const x = leftX + (rightX - leftX) * t;
-      const curveHeight = shieldHeight * 0.7;
-      const y = bottomY - curveHeight * 4 * t * (1 - t);
-      this.shieldGraphics.lineTo(x, y);
-    }
-    this.shieldGraphics.strokePath();
-
-    // Inner core (brightest center, always visible)
-    this.shieldGraphics.lineStyle(
-      lineThickness * 0.7,
-      0xffffff,
-      Math.max(0.9, glowIntensity)
-    );
-    this.shieldGraphics.beginPath();
-    this.shieldGraphics.moveTo(leftX + 2, bottomY - 1);
-    for (let i = 1; i <= segments; i++) {
-      const t = i / segments;
-      const x = leftX + 2 + (rightX - leftX - 4) * t;
-      const curveHeight = shieldHeight * 0.6;
-      const y = bottomY - 1 - curveHeight * 4 * t * (1 - t);
-      this.shieldGraphics.lineTo(x, y);
-    }
-    this.shieldGraphics.strokePath();
-
-    // Add subtle energy particles/sparks along the arc (smaller and fewer)
-    const particleCount = 4; // Fewer particles
-    for (let i = 0; i < particleCount; i++) {
-      const t = i / particleCount; // 0 to 1 along the arc
-      const particleX = leftX + (rightX - leftX) * t;
-      // Calculate Y position along the curve
-      const curveHeight = shieldHeight * 0.7;
-      const particleY = bottomY - curveHeight * 4 * t * (1 - t);
-      const particlePhase = shield.pulsePhase + i * 0.5;
-      // More subtle particle glow - stays visible, just gently pulses
-      const particleGlow = 0.7 + Math.sin(particlePhase) * 0.3; // Pulse between 0.4-1.0, but we'll keep it higher
-
-      this.shieldGraphics.fillStyle(
-        0xffffff,
-        Math.max(0.5, particleGlow * 0.8)
-      );
-      this.shieldGraphics.fillCircle(particleX, particleY, 1); // Smaller particles
-    }
-  }
-
   private launchBall() {
     if (this.ballLaunched.value) return;
     launchBall({
       ball: this.ball,
-      shieldArc: this.shieldArc,
+      shieldArc: this.playerManager!.shieldArc,
       physics: this.physics,
       ballSpeed: this.ballSpeed,
     });
@@ -949,7 +470,7 @@ export class BrickBreaker extends Scene {
 
     handlePaddleHit(ball, shield, {
       ball: this.ball,
-      shieldArc: this.shieldArc,
+      shieldArc: this.playerManager!.shieldArc,
       ballSpeed: this.ballSpeed,
       scene: this,
     });
@@ -1044,7 +565,7 @@ export class BrickBreaker extends Scene {
       coinMultiplier: this.coinMultiplier,
       dropChanceBonus: this.dropChanceBonus,
       breakableBrickCount: this.breakableBrickCount,
-      shieldArc: this.shieldArc,
+      shieldArc: this.playerManager!.shieldArc,
       updateUI: () => this.updateUI(),
       dropItem: (x, y) => this.dropItem(x, y),
       levelComplete: () => this.levelComplete(),
@@ -1055,7 +576,7 @@ export class BrickBreaker extends Scene {
     dropItem(x, y, {
       scene: this,
       gameState: this.gameState,
-      shieldArc: this.shieldArc,
+      shieldArc: this.playerManager!.shieldArc,
       deathZone: this.deathZone,
       physics: this.physics,
       updateUI: () => this.updateUI(),
@@ -1099,7 +620,7 @@ export class BrickBreaker extends Scene {
         levelData: this.levelData,
         bricks: this.bricks,
         breakableBrickCount: this.breakableBrickCount,
-        shieldArc: this.shieldArc,
+        shieldArc: this.playerManager!.shieldArc,
         ball: this.ball,
       });
     } else {
@@ -1108,7 +629,7 @@ export class BrickBreaker extends Scene {
         levelData: { name: "Default", width: 10, height: 8, bricks: [] },
         bricks: this.bricks,
         breakableBrickCount: this.breakableBrickCount,
-        shieldArc: this.shieldArc,
+        shieldArc: this.playerManager!.shieldArc,
         ball: this.ball,
       });
     }
