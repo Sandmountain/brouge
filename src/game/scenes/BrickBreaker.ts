@@ -1,36 +1,20 @@
 import { EventBus } from "../EventBus";
 import { Scene } from "phaser";
-import { GameState, BrickData, LevelData } from "../types";
+import { GameState, LevelData } from "../types";
 import {
   createAnimatedBackground,
   BackgroundManager,
 } from "../utils/backgroundUtils";
 import { createPlayerManager, PlayerManager } from "../utils/playerManager";
 import { createBallManager, BallManager } from "../utils/ballManager";
+import { createBrickManager, BrickManager } from "../utils/brickManager";
 // Game logic modules
-import { explodeTNT } from "../logics/explosions/tntExplosion";
-import { explodeFuse } from "../logics/explosions/fuseExplosion";
-import { damageNeighbors } from "../logics/explosions/damageNeighbors";
-import { handleBrickHit } from "../logics/brickInteractions/brickHitHandler";
-import { teleportBall } from "../logics/brickInteractions/portalTeleport";
-import { randomizeBallDirection } from "../logics/brickInteractions/chaosEffect";
-import { updateMetalBrickAppearance } from "../logics/brickInteractions/metalBrickAppearance";
 import { handlePaddleHit } from "../logics/ballPhysics/paddleHit";
 import { handleBallMissed } from "../logics/ballPhysics/ballMissed";
-import {
-  createBricksFromLevel,
-  createDefaultLevel,
-} from "../logics/brickCreation/brickGrid";
-import { destroyBrick } from "../logics/gameState/brickDestruction";
 import { dropItem } from "../logics/gameState/itemDrops";
 import { levelComplete } from "../logics/gameState/winCondition";
-import { EndlessModeManager } from "../logics/endlessMode/endlessModeManager";
-import { createBrickFromData } from "../logics/brickCreation/brickFactory";
-
-type BrickSprite = Phaser.GameObjects.DOMElement & { brickData?: BrickData };
 
 export class BrickBreaker extends Scene {
-  private bricks!: Phaser.Physics.Arcade.StaticGroup;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasdKeys!: {
     W: Phaser.Input.Keyboard.Key;
@@ -64,11 +48,9 @@ export class BrickBreaker extends Scene {
   private ballLaunched: { value: boolean } = { value: false };
   private cachedWorldBounds?: Phaser.Geom.Rectangle;
   private lastPaddleHitTime: number = 0;
-  private lastBrickHits: Map<Phaser.GameObjects.GameObject, number> = new Map();
   private deathZone!: Phaser.GameObjects.Zone;
   private coinMultiplier: number = 1;
   private dropChanceBonus: number = 0;
-  private breakableBrickCount: { value: number } = { value: 0 };
   private isTestMode: boolean = false;
   private isEndlessMode: boolean = false;
   private endlessModeManager: any = null; // Will be EndlessModeManager
@@ -79,6 +61,8 @@ export class BrickBreaker extends Scene {
   private playerManager?: PlayerManager;
   // Ball manager
   private ballManager?: BallManager;
+  // Brick manager
+  private brickManager?: BrickManager;
 
   constructor() {
     super("BrickBreaker");
@@ -184,8 +168,28 @@ export class BrickBreaker extends Scene {
       window.removeEventListener("keyup", handleKeyUp);
     };
 
-    // Create bricks (this will set world bounds based on level grid)
-    this.createBricks();
+    // Create brick manager
+    this.brickManager = createBrickManager({
+      scene: this,
+      levelData: this.levelData,
+      isEndlessMode: this.isEndlessMode,
+      gameState: this.gameState,
+      shieldArc: this.playerManager!.shieldArc,
+      ball: this.ballManager!.ball,
+      coinMultiplier: this.coinMultiplier,
+      dropChanceBonus: this.dropChanceBonus,
+      onDestroyBrick: () => {
+        // Additional cleanup if needed
+      },
+      onDropItem: (x, y) => this.dropItem(x, y),
+      onLevelComplete: () => this.levelComplete(),
+      updateUI: () => this.updateUI(),
+    });
+
+    // Store endless mode manager reference
+    if (this.brickManager.endlessModeManager) {
+      this.endlessModeManager = this.brickManager.endlessModeManager;
+    }
 
     // Create death zone at bottom (positioned after world bounds are set)
     const worldBounds = this.physics.world.bounds;
@@ -210,7 +214,7 @@ export class BrickBreaker extends Scene {
     // Use collider instead of overlap so ball bounces off bricks
     this.physics.add.collider(
       this.ballManager.ball,
-      this.bricks,
+      this.brickManager.bricks,
       this.hitBrick as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
       undefined,
       this
@@ -393,95 +397,27 @@ export class BrickBreaker extends Scene {
     _ball: Phaser.GameObjects.GameObject,
     brick: Phaser.GameObjects.GameObject
   ) {
-    // Throttle collision handler per brick to prevent multiple rapid hits
-    const now = this.time.now;
-    const lastHitTime = this.lastBrickHits.get(brick);
-    if (lastHitTime && now - lastHitTime < 50) {
-      return; // Ignore if same brick hit within 50ms
-    }
-    this.lastBrickHits.set(brick, now);
+    if (!this.brickManager || !this.ballManager) return;
 
-    // Clean up old entries (older than 1 second) to prevent memory leak
-    if (this.lastBrickHits.size > 100) {
-      for (const [b, time] of this.lastBrickHits.entries()) {
-        if (now - time > 1000) {
-          this.lastBrickHits.delete(b);
+    this.brickManager.hitBrick(_ball, brick, {
+      scene: this,
+      gameState: this.gameState,
+      ballSprite: this.ballManager.ball,
+      prevBallVelocity: this.ballManager.prevBallVelocity,
+      isEndlessMode: this.isEndlessMode,
+      endlessModeManager: this.endlessModeManager,
+      onBrickHit: () => {
+        // Track brick hit for endless mode
+        if (this.isEndlessMode && this.endlessModeManager) {
+          this.endlessModeManager.onBrickHit();
         }
-      }
-    }
-
-    // Track brick hit for endless mode
-    if (this.isEndlessMode && this.endlessModeManager) {
-      this.endlessModeManager.onBrickHit();
-    }
-
-    handleBrickHit(brick, {
-      scene: this,
-      gameState: this.gameState,
-      ball: this.ballManager!.ball,
-      prevBallVelocity: this.ballManager!.prevBallVelocity,
-      explodeTNT: (b, d) => this.explodeTNT(b, d),
-      explodeFuse: (b, d) => this.explodeFuse(b, d),
-      teleportBall: (b, d) =>
-        teleportBall(b, d, {
-          scene: this,
-          ball: this.ballManager!.ball,
-          bricks: this.bricks,
-          prevBallVelocity: this.ballManager!.prevBallVelocity,
-        }),
-      randomizeBallDirection: () =>
-        randomizeBallDirection({
-          ball: this.ballManager!.ball,
-        }),
-      updateMetalBrickAppearance: (b, d) => updateMetalBrickAppearance(b, d),
-      destroyBrick: (b, d) => this.destroyBrick(b, d),
-    });
-  }
-
-  private explodeTNT(brick: BrickSprite, brickData: BrickData) {
-    explodeTNT(brick, brickData, {
-      scene: this,
-      bricks: this.bricks,
-      destroyBrick: (b, d) => this.destroyBrick(b, d),
-      updateMetalBrickAppearance: (b, d) => updateMetalBrickAppearance(b, d),
-    });
-  }
-
-  private explodeFuse(brick: BrickSprite, brickData: BrickData) {
-    explodeFuse(brick, brickData, {
-      scene: this,
-      bricks: this.bricks,
-      time: this.time,
-      destroyBrick: (b, d) => this.destroyBrick(b, d),
-      damageNeighbors: (b, d, m) => this.damageNeighbors(b, d, m),
-    });
-  }
-
-  private damageNeighbors(
-    _brick: BrickSprite,
-    brickData: BrickData,
-    gridMap: Map<string, BrickSprite>
-  ) {
-    damageNeighbors(_brick, brickData, gridMap, {
-      scene: this,
-      updateMetalBrickAppearance: (b, d) => updateMetalBrickAppearance(b, d),
-      explodeFuse: (b, d) => this.explodeFuse(b, d),
-      explodeTNT: (b, d) => this.explodeTNT(b, d),
-      destroyBrick: (b, d) => this.destroyBrick(b, d),
-    });
-  }
-
-  private destroyBrick(brick: BrickSprite, brickData: BrickData) {
-    destroyBrick(brick, brickData, {
-      scene: this,
-      gameState: this.gameState,
-      coinMultiplier: this.coinMultiplier,
-      dropChanceBonus: this.dropChanceBonus,
-      breakableBrickCount: this.breakableBrickCount,
-      shieldArc: this.playerManager!.shieldArc,
+      },
+      onDestroyBrick: () => {
+        // Additional cleanup if needed
+      },
+      onDropItem: (x, y) => this.dropItem(x, y),
+      onLevelComplete: () => this.levelComplete(),
       updateUI: () => this.updateUI(),
-      dropItem: (x, y) => this.dropItem(x, y),
-      levelComplete: () => this.levelComplete(),
     });
   }
 
@@ -494,58 +430,6 @@ export class BrickBreaker extends Scene {
       physics: this.physics,
       updateUI: () => this.updateUI(),
     });
-  }
-
-  private createBricks() {
-    this.bricks = this.physics.add.staticGroup();
-    this.breakableBrickCount.value = 0;
-
-    // Always set world bounds to screen size (never based on level size)
-    this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
-
-    if (this.isEndlessMode) {
-      // Calculate brick dimensions for 16x16 grid
-      const gridWidth = 16;
-      const availableWidth = this.scale.width;
-
-      const paddingRatio = 0.055;
-      const brickWidth =
-        availableWidth / (gridWidth + (gridWidth - 1) * paddingRatio);
-      const padding = brickWidth * paddingRatio;
-      const brickHeight = brickWidth / 3;
-
-      // Initialize endless mode manager
-      this.endlessModeManager = new EndlessModeManager({
-        scene: this,
-        bricks: this.bricks,
-        breakableBrickCount: this.breakableBrickCount,
-        level: this.gameState.level,
-        brickWidth,
-        brickHeight,
-        padding,
-        createBrickFromData,
-      });
-
-      this.endlessModeManager.initialize();
-    } else if (this.levelData && this.levelData.bricks.length > 0) {
-      createBricksFromLevel({
-        scene: this,
-        levelData: this.levelData,
-        bricks: this.bricks,
-        breakableBrickCount: this.breakableBrickCount,
-        shieldArc: this.playerManager!.shieldArc,
-        ball: this.ballManager!.ball,
-      });
-    } else {
-      createDefaultLevel({
-        scene: this,
-        levelData: { name: "Default", width: 10, height: 8, bricks: [] },
-        bricks: this.bricks,
-        breakableBrickCount: this.breakableBrickCount,
-        shieldArc: this.playerManager!.shieldArc,
-        ball: this.ballManager!.ball,
-      });
-    }
   }
 
   private createUI() {
