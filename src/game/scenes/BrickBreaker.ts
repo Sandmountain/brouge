@@ -6,6 +6,7 @@ import {
   BackgroundManager,
 } from "../utils/backgroundUtils";
 import { createPlayerManager, PlayerManager } from "../utils/playerManager";
+import { createBallManager, BallManager } from "../utils/ballManager";
 // Game logic modules
 import { explodeTNT } from "../logics/explosions/tntExplosion";
 import { explodeFuse } from "../logics/explosions/fuseExplosion";
@@ -14,9 +15,7 @@ import { handleBrickHit } from "../logics/brickInteractions/brickHitHandler";
 import { teleportBall } from "../logics/brickInteractions/portalTeleport";
 import { randomizeBallDirection } from "../logics/brickInteractions/chaosEffect";
 import { updateMetalBrickAppearance } from "../logics/brickInteractions/metalBrickAppearance";
-import { launchBall } from "../logics/ballPhysics/ballLaunch";
 import { handlePaddleHit } from "../logics/ballPhysics/paddleHit";
-import { resetBall } from "../logics/ballPhysics/ballReset";
 import { handleBallMissed } from "../logics/ballPhysics/ballMissed";
 import {
   createBricksFromLevel,
@@ -31,7 +30,6 @@ import { createBrickFromData } from "../logics/brickCreation/brickFactory";
 type BrickSprite = Phaser.GameObjects.DOMElement & { brickData?: BrickData };
 
 export class BrickBreaker extends Scene {
-  private ball!: Phaser.Physics.Arcade.Sprite;
   private bricks!: Phaser.Physics.Arcade.StaticGroup;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasdKeys!: {
@@ -64,14 +62,9 @@ export class BrickBreaker extends Scene {
   private paddleDeceleration: number = 2500; // pixels per second squared
   private paddleWidth: number = 120;
   private ballLaunched: { value: boolean } = { value: false };
-  private prevBallVelocity: { x: number; y: number } = { x: 0, y: 0 };
   private cachedWorldBounds?: Phaser.Geom.Rectangle;
   private lastPaddleHitTime: number = 0;
   private lastBrickHits: Map<Phaser.GameObjects.GameObject, number> = new Map();
-  private ballTrail: Phaser.GameObjects.Sprite[] = []; // Motion blur trail for ball
-  private previousBallX: number = 0; // Previous ball X position
-  private previousBallY: number = 0; // Previous ball Y position
-  private ballTrailTimer: number = 0; // Timer for ball trail sprites
   private deathZone!: Phaser.GameObjects.Zone;
   private coinMultiplier: number = 1;
   private dropChanceBonus: number = 0;
@@ -84,6 +77,8 @@ export class BrickBreaker extends Scene {
   private backgroundManager?: BackgroundManager;
   // Player manager
   private playerManager?: PlayerManager;
+  // Ball manager
+  private ballManager?: BallManager;
 
   constructor() {
     super("BrickBreaker");
@@ -137,47 +132,11 @@ export class BrickBreaker extends Scene {
       initialY: this.scale.height - 50,
     });
 
-    // Create ball with gray appearance and border (like the image)
-    const ballGraphics = this.add.graphics();
-    const ballSize = 10;
-    const ballCenter = 11; // Center in 22x22 texture
-    const borderWidth = 1;
-
-    // Light gray border/frame (outer circle) - lighter, more towards white
-    ballGraphics.fillStyle(0xcccccc);
-    ballGraphics.fillCircle(ballCenter, ballCenter, ballSize + borderWidth);
-
-    // Main gray circle - lighter, more towards white
-    ballGraphics.fillStyle(0xaaaaaa);
-    ballGraphics.fillCircle(ballCenter, ballCenter, ballSize);
-
-    // Lighter gray highlight on top-left for depth - more subtle
-    ballGraphics.fillStyle(0xbbbbbb);
-    ballGraphics.fillCircle(ballCenter - 2, ballCenter - 2, ballSize - 3);
-
-    // Dimmed highlight on top-left (glossy effect) - lighter
-    ballGraphics.fillStyle(0xdddddd, 0.5);
-    ballGraphics.fillCircle(ballCenter - 3, ballCenter - 3, 4);
-
-    // Smaller dimmed spot for extra shine - lighter
-    ballGraphics.fillStyle(0xeeeeee, 0.6);
-    ballGraphics.fillCircle(ballCenter - 2, ballCenter - 2, 2);
-
-    // Generate texture with exact size to ensure it's perfectly round
-    ballGraphics.generateTexture("ball", 22, 22);
-    ballGraphics.destroy();
-
-    // Create ball - start it connected to the shield arc
-    this.ball = this.physics.add.sprite(
-      this.scale.width / 2,
-      this.scale.height - 50 - 15, // Position above the shield arc
-      "ball"
-    );
-    this.ball.setCollideWorldBounds(true);
-    this.ball.setBounce(1, 1);
-    this.ball.setCircle(10);
-    // Initially, ball has no velocity (connected to shield)
-    this.ball.setVelocity(0, 0);
+    // Create ball manager
+    this.ballManager = createBallManager(this, {
+      initialX: this.scale.width / 2,
+      initialY: this.scale.height - 50 - 15, // Position above the shield arc
+    });
 
     // Setup input - ensure keyboard is available
     const keyboard = this.input.keyboard;
@@ -242,7 +201,7 @@ export class BrickBreaker extends Scene {
     // Setup collisions
     // Ball collides with shield arc, not the ship
     this.physics.add.collider(
-      this.ball,
+      this.ballManager.ball,
       this.playerManager.shieldArc,
       this.hitPaddle as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
       undefined,
@@ -250,14 +209,14 @@ export class BrickBreaker extends Scene {
     );
     // Use collider instead of overlap so ball bounces off bricks
     this.physics.add.collider(
-      this.ball,
+      this.ballManager.ball,
       this.bricks,
       this.hitBrick as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
       undefined,
       this
     );
     this.physics.add.overlap(
-      this.ball,
+      this.ballManager.ball,
       this.deathZone,
       (_ball, _zone) => {
         // Check if we should move blocks down in endless mode
@@ -283,11 +242,10 @@ export class BrickBreaker extends Scene {
           gameState: this.gameState,
           updateUI: () => this.updateUI(),
           resetBall: () => {
-            resetBall({
-              ball: this.ball,
-              shieldArc: this.playerManager!.shieldArc,
-              ballLaunched: this.ballLaunched,
-            });
+            this.ballManager!.reset(
+              this.playerManager!.shieldArc,
+              this.ballLaunched
+            );
             // Reset hit tracking for new shot
             if (this.isEndlessMode && this.endlessModeManager) {
               this.endlessModeManager.resetHitTracking();
@@ -311,7 +269,7 @@ export class BrickBreaker extends Scene {
       }
 
       // Launch ball if not already launched
-      if (!this.ballLaunched.value) {
+      if (!this.ballLaunched.value && this.ballManager) {
         this.launchBall();
       }
     });
@@ -329,15 +287,6 @@ export class BrickBreaker extends Scene {
     // Update animated background
     if (this.backgroundManager) {
       this.backgroundManager.update(_time, delta);
-    }
-
-    // Store ball velocity before collisions (for portal teleportation)
-    if (this.ball?.body) {
-      const ballBody = this.ball.body as Phaser.Physics.Arcade.Body;
-      if (ballBody.velocity.x !== 0 || ballBody.velocity.y !== 0) {
-        this.prevBallVelocity.x = ballBody.velocity.x;
-        this.prevBallVelocity.y = ballBody.velocity.y;
-      }
     }
 
     // Cache world bounds
@@ -364,53 +313,18 @@ export class BrickBreaker extends Scene {
         },
         worldBounds,
         this.ballLaunched,
-        this.ball
+        this.ballManager?.ball
       );
     }
 
-    // Ball motion blur trail effect
-    const ballMoved =
-      Math.abs(this.ball.x - this.previousBallX) > 0.5 ||
-      Math.abs(this.ball.y - this.previousBallY) > 0.5;
-
-    if (ballMoved && this.ballLaunched.value) {
-      const deltaTime = this.game.loop.delta;
-      this.ballTrailTimer += deltaTime;
-      if (this.ballTrailTimer >= 8) {
-        this.ballTrailTimer = 0;
-
-        const ballTrailSprite = this.add.sprite(
-          this.previousBallX,
-          this.previousBallY,
-          "ball"
-        );
-        ballTrailSprite.setDepth(2);
-        ballTrailSprite.setOrigin(0.5, 0.5);
-        ballTrailSprite.setAlpha(0.08);
-        ballTrailSprite.setTint(0x88aaff);
-
-        this.ballTrail.push(ballTrailSprite);
-
-        this.tweens.add({
-          targets: ballTrailSprite,
-          alpha: 0,
-          scale: 0.7,
-          duration: 400,
-          ease: "Power2",
-          onComplete: () => {
-            ballTrailSprite.destroy();
-            const index = this.ballTrail.indexOf(ballTrailSprite);
-            if (index > -1) {
-              this.ballTrail.splice(index, 1);
-            }
-          },
-        });
-      }
+    // Update ball manager (handles ball trail, velocity tracking, connection to shield)
+    if (this.ballManager) {
+      this.ballManager.update(
+        delta,
+        this.ballLaunched,
+        this.playerManager!.shieldArc
+      );
     }
-
-    // Update previous ball position
-    this.previousBallX = this.ball.x;
-    this.previousBallY = this.ball.y;
 
     // Launch ball with spacebar or W
     if (!this.ballLaunched.value) {
@@ -428,13 +342,12 @@ export class BrickBreaker extends Scene {
   }
 
   private launchBall() {
-    if (this.ballLaunched.value) return;
-    launchBall({
-      ball: this.ball,
-      shieldArc: this.playerManager!.shieldArc,
-      physics: this.physics,
-      ballSpeed: this.ballSpeed,
-    });
+    if (this.ballLaunched.value || !this.ballManager) return;
+    this.ballManager.launch(
+      this.playerManager!.shieldArc,
+      this.physics,
+      this.ballSpeed
+    );
     this.ballLaunched.value = true;
   }
 
@@ -469,7 +382,7 @@ export class BrickBreaker extends Scene {
     this.lastPaddleHitTime = now;
 
     handlePaddleHit(ball, shield, {
-      ball: this.ball,
+      ball: this.ballManager!.ball,
       shieldArc: this.playerManager!.shieldArc,
       ballSpeed: this.ballSpeed,
       scene: this,
@@ -505,20 +418,20 @@ export class BrickBreaker extends Scene {
     handleBrickHit(brick, {
       scene: this,
       gameState: this.gameState,
-      ball: this.ball,
-      prevBallVelocity: this.prevBallVelocity,
+      ball: this.ballManager!.ball,
+      prevBallVelocity: this.ballManager!.prevBallVelocity,
       explodeTNT: (b, d) => this.explodeTNT(b, d),
       explodeFuse: (b, d) => this.explodeFuse(b, d),
       teleportBall: (b, d) =>
         teleportBall(b, d, {
           scene: this,
-          ball: this.ball,
+          ball: this.ballManager!.ball,
           bricks: this.bricks,
-          prevBallVelocity: this.prevBallVelocity,
+          prevBallVelocity: this.ballManager!.prevBallVelocity,
         }),
       randomizeBallDirection: () =>
         randomizeBallDirection({
-          ball: this.ball,
+          ball: this.ballManager!.ball,
         }),
       updateMetalBrickAppearance: (b, d) => updateMetalBrickAppearance(b, d),
       destroyBrick: (b, d) => this.destroyBrick(b, d),
@@ -621,7 +534,7 @@ export class BrickBreaker extends Scene {
         bricks: this.bricks,
         breakableBrickCount: this.breakableBrickCount,
         shieldArc: this.playerManager!.shieldArc,
-        ball: this.ball,
+        ball: this.ballManager!.ball,
       });
     } else {
       createDefaultLevel({
@@ -630,7 +543,7 @@ export class BrickBreaker extends Scene {
         bricks: this.bricks,
         breakableBrickCount: this.breakableBrickCount,
         shieldArc: this.playerManager!.shieldArc,
-        ball: this.ball,
+        ball: this.ballManager!.ball,
       });
     }
   }
