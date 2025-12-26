@@ -1,6 +1,7 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import { GameState, Talent } from '../types';
+import { createGradientBackground } from '../utils/backgroundUtils';
 
 export class TalentSelection extends Scene {
   private gameState!: GameState;
@@ -21,7 +22,8 @@ export class TalentSelection extends Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(0x0f0f23);
+    // Create gradient background
+    createGradientBackground(this);
     
     // Title
     this.add.text(this.scale.width / 2, 50, 'Choose a Talent', {

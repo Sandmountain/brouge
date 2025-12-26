@@ -14,7 +14,7 @@ const config: Phaser.Types.Core.GameConfig = {
     width: 1280,
     height: 720, // 16:9 aspect ratio
     parent: 'game-container',
-    backgroundColor: '#028af8',
+    backgroundColor: '#0a0a1a', // Dark blue to match gradient background
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,

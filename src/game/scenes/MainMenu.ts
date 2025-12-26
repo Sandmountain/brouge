@@ -1,18 +1,70 @@
 import { GameObjects, Scene } from "phaser";
 
 import { EventBus } from "../EventBus";
+import {
+  createGradientBackground,
+  createParallaxStars,
+  createStaticStars,
+  createBackgroundSmoke,
+  createPlanets,
+  updateStarParallax,
+  updateBackgroundSmoke,
+  updatePlanetParallax,
+  StarData,
+  SmokeData,
+  PlanetData,
+} from "../utils/backgroundUtils";
 
 export class MainMenu extends Scene {
   background: GameObjects.Image;
   title: GameObjects.Text;
+  private stars: StarData[] = [];
+  private smokeParticles: SmokeData[] = [];
+  private planets: PlanetData[] = [];
+  private mouseX: number = 0;
+  private mouseY: number = 0;
+  private targetMouseX: number = 0;
+  private targetMouseY: number = 0;
 
   constructor() {
     super("MainMenu");
   }
 
   create() {
-    // Set dark background with subtle red tint
-    this.cameras.main.setBackgroundColor(0x0a0a0a);
+    // Create gradient background
+    createGradientBackground(this);
+
+    // Create parallax stars (moving stars)
+    this.stars = createParallaxStars(this, 80, 1, 10);
+    
+    // Create static stars (farthest background layer, don't move)
+    const staticStars = createStaticStars(this, 40);
+    this.stars = [...this.stars, ...staticStars];
+
+    // Create planets (2 planets) with very different z-space
+    this.planets = createPlanets(this, 2);
+
+    // Create background smoke for ambiance (positioned near star clusters and above planets)
+    this.smokeParticles = createBackgroundSmoke(this, 12, this.stars, this.planets);
+
+    // Set up mouse tracking for parallax effect (additive to default movement)
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      // Normalize mouse position to -1 to 1 range (0 is center)
+      const centerX = this.scale.width / 2;
+      const centerY = this.scale.height / 2;
+      this.targetMouseX = (pointer.x - centerX) / centerX;
+      this.targetMouseY = (pointer.y - centerY) / centerY;
+      
+      // Clamp to -1 to 1
+      this.targetMouseX = Phaser.Math.Clamp(this.targetMouseX, -1, 1);
+      this.targetMouseY = Phaser.Math.Clamp(this.targetMouseY, -1, 1);
+    });
+
+    // Smoothly return mouse parallax to center when mouse leaves (but keep default movement)
+    this.input.on("pointerout", () => {
+      this.targetMouseX = 0;
+      this.targetMouseY = 0;
+    });
 
     // Get screen center
     const centerX = this.scale.width / 2;
@@ -21,14 +73,14 @@ export class MainMenu extends Scene {
     // Create animated title with letter-by-letter effect
     this.createAnimatedTitle();
 
-    // Start button with beveled styling
+    // Start button with beveled styling - using cyan/teal to match title
     const startBtn = this.createBeveledButton(
       centerX,
       centerY - 70,
       200,
       50,
-      0xe63946,
-      0xc1121f
+      0x4ecdc4,
+      0x3ab5ad
     );
     startBtn.setInteractive({ useHandCursor: true });
     startBtn.setDepth(100);
@@ -62,7 +114,7 @@ export class MainMenu extends Scene {
 
     // Hover effects
     startBtn.on("pointerover", () => {
-      this.updateBeveledButton(startBtn, 0xf77a7a, 0xe63946);
+      this.updateBeveledButton(startBtn, 0x6eddd4, 0x4ecdc4);
       this.tweens.add({
         targets: startBtn,
         scaleX: 1.05,
@@ -72,7 +124,7 @@ export class MainMenu extends Scene {
     });
 
     startBtn.on("pointerout", () => {
-      this.updateBeveledButton(startBtn, 0xe63946, 0xc1121f);
+      this.updateBeveledButton(startBtn, 0x4ecdc4, 0x3ab5ad);
       this.tweens.add({
         targets: startBtn,
         scaleX: 1,
@@ -81,14 +133,14 @@ export class MainMenu extends Scene {
       });
     });
 
-    // Endless Mode button
+    // Endless Mode button - using purple to match title
     const endlessBtn = this.createBeveledButton(
       centerX,
       centerY + 20,
       200,
       50,
-      0xe63946,
-      0xc1121f
+      0xbb8fce,
+      0x9b6fae
     );
     endlessBtn.setInteractive({ useHandCursor: true });
     endlessBtn.setDepth(100);
@@ -122,7 +174,7 @@ export class MainMenu extends Scene {
 
     // Hover effects
     endlessBtn.on("pointerover", () => {
-      this.updateBeveledButton(endlessBtn, 0xf77a7a, 0xe63946);
+      this.updateBeveledButton(endlessBtn, 0xc9a5d9, 0xbb8fce);
       this.tweens.add({
         targets: endlessBtn,
         scaleX: 1.05,
@@ -132,7 +184,7 @@ export class MainMenu extends Scene {
     });
 
     endlessBtn.on("pointerout", () => {
-      this.updateBeveledButton(endlessBtn, 0xe63946, 0xc1121f);
+      this.updateBeveledButton(endlessBtn, 0xbb8fce, 0x9b6fae);
       this.tweens.add({
         targets: endlessBtn,
         scaleX: 1,
@@ -141,16 +193,16 @@ export class MainMenu extends Scene {
       });
     });
 
-    // Level Editor button
+    // Level Editor button - using yellow/gold to match title
     const editorBtn = this.createBeveledButton(
       centerX,
       centerY + 110,
       200,
       50,
-      0x2a2a2a,
-      0x1a1a1a
+      0xf7dc6f,
+      0xd7bc4f
     );
-    editorBtn.setStrokeStyle(2, 0xe63946);
+    editorBtn.setStrokeStyle(2, 0xffd700);
     editorBtn.setInteractive({ useHandCursor: true });
     editorBtn.setDepth(100);
 
@@ -183,8 +235,8 @@ export class MainMenu extends Scene {
 
     // Hover effects
     editorBtn.on("pointerover", () => {
-      this.updateBeveledButton(editorBtn, 0x3a3a3a, 0x2a2a2a);
-      editorBtn.setStrokeStyle(2, 0xf77a7a);
+      this.updateBeveledButton(editorBtn, 0xffe44d, 0xf7dc6f);
+      editorBtn.setStrokeStyle(2, 0xffeb6e);
       this.tweens.add({
         targets: editorBtn,
         scaleX: 1.05,
@@ -194,8 +246,8 @@ export class MainMenu extends Scene {
     });
 
     editorBtn.on("pointerout", () => {
-      this.updateBeveledButton(editorBtn, 0x2a2a2a, 0x1a1a1a);
-      editorBtn.setStrokeStyle(2, 0xe63946);
+      this.updateBeveledButton(editorBtn, 0xf7dc6f, 0xd7bc4f);
+      editorBtn.setStrokeStyle(2, 0xffd700);
       this.tweens.add({
         targets: editorBtn,
         scaleX: 1,
@@ -266,6 +318,7 @@ export class MainMenu extends Scene {
     EventBus.emit("open-level-editor");
   }
 
+
   private createAnimatedTitle() {
     const titleText = "BROUGE";
     const centerX = this.scale.width / 2;
@@ -282,11 +335,11 @@ export class MainMenu extends Scene {
       // Create main letter using DOM element with CSS font-palette
       const letterElement = document.createElement("div");
       letterElement.textContent = letter;
-      letterElement.className = "brouge-title";
+      // Add letter-specific class for color palette
+      const letterClass = `brouge-title letter-${letter.toLowerCase()}`;
+      letterElement.className = letterClass;
       letterElement.style.fontFamily = '"Nabla", sans-serif';
       letterElement.style.fontSize = "80px";
-      letterElement.style.fontPalette = "--custom";
-      letterElement.style.setProperty("-webkit-font-palette", "--custom");
       letterElement.style.fontVariationSettings = '"EDPT" 100, "EHLT" 12';
       letterElement.style.textShadow = "3px 3px 6px rgba(0, 0, 0, 0.8)";
       letterElement.style.position = "relative";
@@ -375,5 +428,62 @@ export class MainMenu extends Scene {
   ) {
     button.setFillStyle(fillColor);
     button.setStrokeStyle(2, borderColor);
+  }
+
+  update(time: number, delta: number) {
+    // Smoothly interpolate mouse position to prevent janky movement
+    // Use delta-based interpolation for frame-rate independent smoothing
+    const smoothingSpeed = 0.05; // Adjust this (0-1) - lower = smoother but slower response
+    const smoothingFactor = 1 - Math.pow(1 - smoothingSpeed, delta / 16); // Normalize to 60fps
+    
+    this.mouseX = Phaser.Math.Linear(
+      this.mouseX,
+      this.targetMouseX,
+      smoothingFactor
+    );
+    this.mouseY = Phaser.Math.Linear(
+      this.mouseY,
+      this.targetMouseY,
+      smoothingFactor
+    );
+
+    // Update stars with continuous movement and mouse parallax
+    if (this.stars && this.stars.length > 0) {
+      updateStarParallax(
+        this.stars,
+        delta,
+        this.mouseX,
+        this.mouseY,
+        25, // Reduced parallax for more subtle mouse effect
+        this.scale.width,
+        this.scale.height
+      );
+    }
+
+    // Update background smoke with parallax and rotation
+    if (this.smokeParticles && this.smokeParticles.length > 0) {
+      updateBackgroundSmoke(
+        this.smokeParticles,
+        delta,
+        this.mouseX,
+        this.mouseY,
+        15, // Reduced parallax for more subtle mouse effect
+        this.scale.width,
+        this.scale.height
+      );
+    }
+
+    // Update planets with parallax
+    if (this.planets && this.planets.length > 0) {
+      updatePlanetParallax(
+        this.planets,
+        delta,
+        this.mouseX,
+        this.mouseY,
+        30, // Parallax offset for planets
+        this.scale.width,
+        this.scale.height
+      );
+    }
   }
 }

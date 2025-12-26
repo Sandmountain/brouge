@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { createGradientBackground } from '../utils/backgroundUtils';
 
 export class Preloader extends Scene
 {
@@ -9,14 +10,16 @@ export class Preloader extends Scene
 
     init ()
     {
-        //  We loaded this image in our Boot Scene, so we can display it here
-        this.add.image(512, 384, 'background');
+        // Create gradient background
+        createGradientBackground(this);
 
         //  A simple progress bar. This is the outline of the bar.
-        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
+        const centerX = this.scale.width / 2;
+        const centerY = this.scale.height / 2;
+        this.add.rectangle(centerX, centerY, 468, 32).setStrokeStyle(1, 0xffffff).setDepth(100);
 
         //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
-        const bar = this.add.rectangle(512-230, 384, 4, 28, 0xffffff);
+        const bar = this.add.rectangle(centerX-230, centerY, 4, 28, 0xffffff).setDepth(100);
 
         //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
         this.load.on('progress', (progress: number) => {
@@ -43,6 +46,31 @@ export class Preloader extends Scene
         for (let i = 0; i <= 19; i++) {
             const fireNum = i.toString().padStart(2, '0');
             this.load.image(`fire${fireNum}`, `Effects/fire${fireNum}.png`);
+        }
+        
+        // Load star sprites for main menu background
+        this.load.setPath('assets/space-star');
+        this.load.image('particleStar', 'particleStar.png');
+        this.load.image('particleSmallStar', 'particleSmallStar.png');
+        
+        // Load smoke sprites for background ambiance
+        this.load.setPath('assets/fx');
+        for (let i = 1; i <= 8; i++) {
+            const smokeNum = i.toString().padStart(2, '0');
+            this.load.image(`smoke_${smokeNum}`, `smoke_${smokeNum}.png`);
+        }
+        
+        // Load planet sprites
+        this.load.setPath('assets/kenney_planets/Planets');
+        for (let i = 0; i <= 8; i++) {
+            const planetNum = i.toString().padStart(2, '0');
+            this.load.image(`planet${planetNum}`, `planet${planetNum}.png`);
+        }
+        
+        // Load light effects for planets
+        this.load.setPath('assets/kenney_planets/Parts');
+        for (let i = 0; i <= 10; i++) {
+            this.load.image(`light${i}`, `light${i}.png`);
         }
     }
 

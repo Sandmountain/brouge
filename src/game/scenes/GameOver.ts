@@ -1,6 +1,7 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import { GameState } from '../types';
+import { createGradientBackground } from '../utils/backgroundUtils';
 
 export class GameOver extends Scene
 {
@@ -20,11 +21,10 @@ export class GameOver extends Scene
 
     create ()
     {
-        this.camera = this.cameras.main
-        this.camera.setBackgroundColor(0xff0000);
-
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0.5);
+        this.camera = this.cameras.main;
+        
+        // Create gradient background
+        createGradientBackground(this);
 
         this.gameOverText = this.add.text(512, 300, 'Game Over', {
             fontFamily: 'Arial Black', fontSize: 64, color: '#ffffff',

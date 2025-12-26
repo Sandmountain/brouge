@@ -1,16 +1,75 @@
-@font-palette-values --custom {
+/* Colorful cartoonish palettes for each letter - matching brick colors */
+@font-palette-values --b-letter {
   font-family: "Nabla";
-  override-colors: 0 #000000, 1 #330000, 2 #660000, 3 #990000, 4 #cc0000,
-    5 #ff0000, 6 #ff3333, 7 #ff6666, 8 #ff9999, 9 #ffcccc;
+  override-colors: 0 #000000, 1 #1a1a1a, 2 #4ecdc4, 3 #45b7d1, 4 #85c1e2,
+    5 #4ecdc4, 6 #6eddd4, 7 #8eede4, 8 #aefff4, 9 #ffffff;
 }
 
-/* Apply the red gradient palette to Nabla text */
+@font-palette-values --r-letter {
+  font-family: "Nabla";
+  override-colors: 0 #000000, 1 #1a1a1a, 2 #ff6b6b, 3 #ff8b8b, 4 #ffa0a0,
+    5 #ff6b6b, 6 #ff8b8b, 7 #ffa0a0, 8 #ffb5b5, 9 #ffffff;
+}
+
+@font-palette-values --o-letter {
+  font-family: "Nabla";
+  override-colors: 0 #000000, 1 #1a1a1a, 2 #f7dc6f, 3 #ffd700, 4 #ffe44d,
+    5 #f7dc6f, 6 #ffe44d, 7 #ffeb6e, 8 #fff28e, 9 #ffffff;
+}
+
+@font-palette-values --u-letter {
+  font-family: "Nabla";
+  override-colors: 0 #000000, 1 #1a1a1a, 2 #bb8fce, 3 #9b59b6, 4 #c9a5d9,
+    5 #bb8fce, 6 #c9a5d9, 7 #d7b5e4, 8 #e5c5ef, 9 #ffffff;
+}
+
+@font-palette-values --g-letter {
+  font-family: "Nabla";
+  override-colors: 0 #000000, 1 #1a1a1a, 2 #98d8c8, 3 #7ac8b8, 4 #b8e8d8,
+    5 #98d8c8, 6 #b8e8d8, 7 #c8f0e8, 8 #d8f8f0, 9 #ffffff;
+}
+
+@font-palette-values --e-letter {
+  font-family: "Nabla";
+  override-colors: 0 #000000, 1 #1a1a1a, 2 #ffa07a, 3 #ff8c69, 4 #ffb59a,
+    5 #ffa07a, 6 #ffb59a, 7 #ffcaba, 8 #ffdfda, 9 #ffffff;
+}
+
+/* Apply palettes to letter classes */
 .brouge-title {
   font-family: "Nabla", sans-serif;
-  font-palette: --custom;
-  -webkit-font-palette: --custom;
   font-variation-settings: "EDPT" 100, "EHLT" 12;
   line-height: 1.1;
+}
+
+.brouge-title.letter-b {
+  font-palette: --b-letter;
+  -webkit-font-palette: --b-letter;
+}
+
+.brouge-title.letter-r {
+  font-palette: --r-letter;
+  -webkit-font-palette: --r-letter;
+}
+
+.brouge-title.letter-o {
+  font-palette: --o-letter;
+  -webkit-font-palette: --o-letter;
+}
+
+.brouge-title.letter-u {
+  font-palette: --u-letter;
+  -webkit-font-palette: --u-letter;
+}
+
+.brouge-title.letter-g {
+  font-palette: --g-letter;
+  -webkit-font-palette: --g-letter;
+}
+
+.brouge-title.letter-e {
+  font-palette: --e-letter;
+  -webkit-font-palette: --e-letter;
 }
 
 body {
