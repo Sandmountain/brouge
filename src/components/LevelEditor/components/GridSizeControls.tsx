@@ -19,71 +19,70 @@ export function GridSizeControls({
 }: GridSizeControlsProps) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "12px",
-            color: "#ffffff",
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "12px",
+          color: "#ffffff",
+        }}
+      >
+        W:
+        <input
+          type="number"
+          min="5"
+          max="30"
+          value={levelData.width}
+          onChange={(e) => {
+            const newWidth = parseInt(e.target.value) || 10;
+            const maxX =
+              (newWidth - 1) * (brickWidth + padding) + brickWidth / 2;
+            onWidthChange(newWidth);
           }}
-        >
-          W:
-          <input
-            type="number"
-            min="5"
-            max="50"
-            value={levelData.width}
-            onChange={(e) => {
-              const newWidth = parseInt(e.target.value) || 10;
-              const maxX =
-                (newWidth - 1) * (brickWidth + padding) + brickWidth / 2;
-              onWidthChange(newWidth);
-            }}
-            style={{
-              width: "50px",
-              padding: "4px 6px",
-              background: "#2a2a2a",
-              border: "1px solid #e63946",
-              borderRadius: "4px",
-              color: "#ffffff",
-              fontSize: "12px",
-            }}
-          />
-        </label>
-        <label
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "12px",
+            width: "50px",
+            padding: "4px 6px",
+            background: "#2a2a2a",
+            border: "1px solid #e63946",
+            borderRadius: "4px",
             color: "#ffffff",
+            fontSize: "12px",
           }}
-        >
-          H:
-          <input
-            type="number"
-            min="3"
-            max="30"
-            value={levelData.height}
-            onChange={(e) => {
-              const newHeight = parseInt(e.target.value) || 8;
-              const maxY =
-                (newHeight - 1) * (brickHeight + padding) + brickHeight / 2;
-              onHeightChange(newHeight);
-            }}
-            style={{
-              width: "50px",
-              padding: "4px 6px",
-              background: "#2a2a2a",
-              border: "1px solid #e63946",
-              borderRadius: "4px",
-              color: "#ffffff",
-              fontSize: "12px",
-            }}
-          />
-        </label>
+        />
+      </label>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "12px",
+          color: "#ffffff",
+        }}
+      >
+        H:
+        <input
+          type="number"
+          min="3"
+          max="30"
+          value={levelData.height}
+          onChange={(e) => {
+            const newHeight = parseInt(e.target.value) || 8;
+            const maxY =
+              (newHeight - 1) * (brickHeight + padding) + brickHeight / 2;
+            onHeightChange(newHeight);
+          }}
+          style={{
+            width: "50px",
+            padding: "4px 6px",
+            background: "#2a2a2a",
+            border: "1px solid #e63946",
+            borderRadius: "4px",
+            color: "#ffffff",
+            fontSize: "12px",
+          }}
+        />
+      </label>
     </div>
   );
 }
-
