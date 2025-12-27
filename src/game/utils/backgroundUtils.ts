@@ -58,6 +58,8 @@ export interface StarData {
   currentSpriteType: string; // 'particleStar' or 'particleSmallStar'
   driftX: number; // Continuous drift speed in X direction
   driftY: number; // Continuous drift speed in Y direction
+  isBlueStar?: boolean; // Whether this star has a blue tint and glow
+  glowSprite?: Phaser.GameObjects.Image; // Optional glow effect sprite
 }
 
 /**
@@ -119,14 +121,36 @@ export function createParallaxStars(
       star.setDepth(depth);
 
       // Random alpha based on depth (farther = dimmer)
-      const alpha = Phaser.Math.FloatBetween(0.3, 0.9) * (1 - (depth - minDepth) / (maxDepth - minDepth) * 0.5);
+      let alpha =
+        Phaser.Math.FloatBetween(0.3, 0.9) *
+        (1 - ((depth - minDepth) / (maxDepth - minDepth)) * 0.5);
+
+      // Randomly select ~5% (1/20) of stars to be blue
+      const isBlueStar = Phaser.Math.Between(1, 20) === 1;
+      let glowSprite: Phaser.GameObjects.Image | undefined;
+
+      if (isBlueStar) {
+        // Make blue stars brighter (increase alpha by 30-50%)
+        alpha = Math.min(1.0, alpha * Phaser.Math.FloatBetween(1.3, 1.5));
+        // Apply subtle blue tint
+        star.setTint(0x88aaff); // Light blue tint
+
+        // Create a small blue glow effect
+        glowSprite = scene.add.image(finalX, finalY, starType);
+        glowSprite.setScale(scale * 1.5); // Slightly larger than the star
+        glowSprite.setDepth(depth + 0.01); // Just above the star
+        glowSprite.setAlpha(alpha * 0.3); // Subtle glow
+        glowSprite.setTint(0x4488ff); // Brighter blue for glow
+        glowSprite.setBlendMode(Phaser.BlendModes.ADD); // Additive blending for glow effect
+      }
+
       star.setAlpha(Math.max(0.2, alpha));
 
       // Random drift speed based on depth (closer stars drift faster)
       const baseDriftSpeed = 0.1;
       const driftSpeed = baseDriftSpeed * normalizedParallaxFactor;
       const driftAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-      
+
       stars.push({
         star,
         baseX: finalX,
@@ -137,6 +161,8 @@ export function createParallaxStars(
         currentSpriteType: starType,
         driftX: Math.cos(driftAngle) * driftSpeed,
         driftY: Math.sin(driftAngle) * driftSpeed,
+        isBlueStar,
+        glowSprite,
       });
     }
   }
@@ -160,14 +186,36 @@ export function createParallaxStars(
 
     star.setDepth(depth);
 
-    const alpha = Phaser.Math.FloatBetween(0.3, 0.9) * (1 - (depth - minDepth) / (maxDepth - minDepth) * 0.5);
+    let alpha =
+      Phaser.Math.FloatBetween(0.3, 0.9) *
+      (1 - ((depth - minDepth) / (maxDepth - minDepth)) * 0.5);
+
+    // Randomly select ~5% (1/20) of stars to be blue
+    const isBlueStar = Phaser.Math.Between(1, 20) === 1;
+    let glowSprite: Phaser.GameObjects.Image | undefined;
+
+    if (isBlueStar) {
+      // Make blue stars brighter (increase alpha by 30-50%)
+      alpha = Math.min(1.0, alpha * Phaser.Math.FloatBetween(1.3, 1.5));
+      // Apply subtle blue tint
+      star.setTint(0x88aaff); // Light blue tint
+
+      // Create a small blue glow effect
+      glowSprite = scene.add.image(x, y, starType);
+      glowSprite.setScale(scale * 1.5); // Slightly larger than the star
+      glowSprite.setDepth(depth + 0.01); // Just above the star
+      glowSprite.setAlpha(alpha * 0.3); // Subtle glow
+      glowSprite.setTint(0x4488ff); // Brighter blue for glow
+      glowSprite.setBlendMode(Phaser.BlendModes.ADD); // Additive blending for glow effect
+    }
+
     star.setAlpha(Math.max(0.2, alpha));
 
     // Random drift speed based on depth
     const baseDriftSpeed = 0.1;
     const driftSpeed = baseDriftSpeed * normalizedParallaxFactor;
     const driftAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    
+
     stars.push({
       star,
       baseX: x,
@@ -178,6 +226,8 @@ export function createParallaxStars(
       currentSpriteType: starType,
       driftX: Math.cos(driftAngle) * driftSpeed,
       driftY: Math.sin(driftAngle) * driftSpeed,
+      isBlueStar,
+      glowSprite,
     });
   }
 
@@ -217,7 +267,27 @@ export function createStaticStars(
     star.setDepth(depth);
 
     // Dimmer alpha for distant stars
-    const alpha = Phaser.Math.FloatBetween(0.2, 0.5);
+    let alpha = Phaser.Math.FloatBetween(0.2, 0.5);
+
+    // Randomly select ~5% (1/20) of stars to be blue
+    const isBlueStar = Phaser.Math.Between(1, 20) === 1;
+    let glowSprite: Phaser.GameObjects.Image | undefined;
+
+    if (isBlueStar) {
+      // Make blue stars brighter (increase alpha by 30-50%)
+      alpha = Math.min(1.0, alpha * Phaser.Math.FloatBetween(1.3, 1.5));
+      // Apply subtle blue tint
+      star.setTint(0x88aaff); // Light blue tint
+
+      // Create a small blue glow effect
+      glowSprite = scene.add.image(x, y, starType);
+      glowSprite.setScale(scale * 1.5); // Slightly larger than the star
+      glowSprite.setDepth(depth + 0.01); // Just above the star
+      glowSprite.setAlpha(alpha * 0.3); // Subtle glow
+      glowSprite.setTint(0x4488ff); // Brighter blue for glow
+      glowSprite.setBlendMode(Phaser.BlendModes.ADD); // Additive blending for glow effect
+    }
+
     star.setAlpha(alpha);
 
     stars.push({
@@ -230,6 +300,8 @@ export function createStaticStars(
       currentSpriteType: starType,
       driftX: 0, // No drift
       driftY: 0, // No drift
+      isBlueStar,
+      glowSprite,
     });
   }
 
@@ -278,33 +350,34 @@ export function createBackgroundSmoke(
     const processed = new Set<number>();
     for (let i = 0; i < starData.length; i++) {
       if (processed.has(i)) continue;
-      
+
       const clusterStars: number[] = [i];
       processed.add(i);
-      
+
       // Find nearby stars
       for (let j = i + 1; j < starData.length; j++) {
         if (processed.has(j)) continue;
         const dx = starData[i].baseX - starData[j].baseX;
         const dy = starData[i].baseY - starData[j].baseY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (distance < 150) {
           clusterStars.push(j);
           processed.add(j);
         }
       }
-      
+
       // If cluster has at least 3 stars, calculate center
       if (clusterStars.length >= 3) {
-        let sumX = 0, sumY = 0;
-        clusterStars.forEach(idx => {
+        let sumX = 0,
+          sumY = 0;
+        clusterStars.forEach((idx) => {
           sumX += starData[idx].baseX;
           sumY += starData[idx].baseY;
         });
         starClusterCenters.push({
           x: sumX / clusterStars.length,
-          y: sumY / clusterStars.length
+          y: sumY / clusterStars.length,
         });
       }
     }
@@ -326,21 +399,35 @@ export function createBackgroundSmoke(
       // Position cloud cluster close to and above the planet
       const planetScale = planet.scale;
       const planetRadius = 100 * planetScale; // Approximate planet radius
-      
+
       // Cluster center: slightly offset horizontally, positioned above planet
-      const offsetX = Phaser.Math.Between(-planetRadius * 0.5, planetRadius * 0.5);
+      const offsetX = Phaser.Math.Between(
+        -planetRadius * 0.5,
+        planetRadius * 0.5
+      );
       const offsetY = -planetRadius * Phaser.Math.FloatBetween(0.8, 1.5); // Above planet
-      
-      const clusterX = Phaser.Math.Clamp(planet.baseX + offsetX, 50, width - 50);
-      const clusterY = Phaser.Math.Clamp(planet.baseY + offsetY, height * 0.1, height * 0.8);
-      
+
+      const clusterX = Phaser.Math.Clamp(
+        planet.baseX + offsetX,
+        50,
+        width - 50
+      );
+      const clusterY = Phaser.Math.Clamp(
+        planet.baseY + offsetY,
+        height * 0.1,
+        height * 0.8
+      );
+
       // Smaller cluster radius for planet clouds
       const clusterRadius = Phaser.Math.Between(40, 80);
-      
+
       // Create 3-5 smoke particles per planet cloud cluster
       const smokePerPlanet = Phaser.Math.Between(3, 5);
-      const actualSmokeCount = Math.min(smokePerPlanet, smokeCount - smokeCreated);
-      
+      const actualSmokeCount = Math.min(
+        smokePerPlanet,
+        smokeCount - smokeCreated
+      );
+
       for (let i = 0; i < actualSmokeCount && smokeCreated < smokeCount; i++) {
         // Random position within cluster radius
         const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
@@ -399,27 +486,36 @@ export function createBackgroundSmoke(
           parallaxFactor: normalizedParallaxFactor,
           depth: cloudDepth,
         });
-        
+
         smokeCreated++;
       }
-      
+
       // Also create a cloud cluster in front of the planet (not just above)
       const frontClusterX = Phaser.Math.Clamp(
-        planet.baseX + Phaser.Math.Between(-planetRadius * 0.3, planetRadius * 0.3),
+        planet.baseX +
+          Phaser.Math.Between(-planetRadius * 0.3, planetRadius * 0.3),
         50,
         width - 50
       );
       const frontClusterY = Phaser.Math.Clamp(
-        planet.baseY + Phaser.Math.Between(-planetRadius * 0.3, planetRadius * 0.3),
+        planet.baseY +
+          Phaser.Math.Between(-planetRadius * 0.3, planetRadius * 0.3),
         height * 0.1,
         height * 0.9
       );
-      
+
       const frontClusterRadius = Phaser.Math.Between(30, 60);
       const frontSmokeCount = Phaser.Math.Between(3, 5);
-      const actualFrontSmokeCount = Math.min(frontSmokeCount, smokeCount - smokeCreated);
-      
-      for (let i = 0; i < actualFrontSmokeCount && smokeCreated < smokeCount; i++) {
+      const actualFrontSmokeCount = Math.min(
+        frontSmokeCount,
+        smokeCount - smokeCreated
+      );
+
+      for (
+        let i = 0;
+        i < actualFrontSmokeCount && smokeCreated < smokeCount;
+        i++
+      ) {
         const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
         const distance = Phaser.Math.FloatBetween(0, frontClusterRadius);
         const x = frontClusterX + Math.cos(angle) * distance;
@@ -466,20 +562,27 @@ export function createBackgroundSmoke(
           parallaxFactor: planet.parallaxFactor,
           depth: frontCloudDepth,
         });
-        
+
         smokeCreated++;
       }
     }
   }
 
   // Then create remaining smoke clusters (near star clusters or random)
-  for (let cluster = 0; cluster < clusterCount && smokeCreated < smokeCount; cluster++) {
+  for (
+    let cluster = 0;
+    cluster < clusterCount && smokeCreated < smokeCount;
+    cluster++
+  ) {
     // Determine cluster center - prefer near star clusters
     let clusterX: number, clusterY: number;
-    
+
     if (starClusterCenters.length > 0 && Phaser.Math.Between(0, 1) < 0.7) {
       // 70% chance to position near a star cluster
-      const starCluster = starClusterCenters[Phaser.Math.Between(0, starClusterCenters.length - 1)];
+      const starCluster =
+        starClusterCenters[
+          Phaser.Math.Between(0, starClusterCenters.length - 1)
+        ];
       // Add some random offset to not be exactly on the star cluster
       clusterX = Phaser.Math.Clamp(
         starCluster.x + Phaser.Math.Between(-100, 100),
@@ -499,11 +602,11 @@ export function createBackgroundSmoke(
 
     // Cluster radius for smoke
     const clusterRadius = Phaser.Math.Between(60, 120);
-    
+
     // Number of smoke particles in this cluster (at least 3)
     const smokeInCluster = baseSmokePerCluster + (cluster < extraSmoke ? 1 : 0);
     const actualSmokeCount = Math.max(3, smokeInCluster);
-    
+
     // Create smoke particles in this cluster
     for (let i = 0; i < actualSmokeCount && smokeCreated < smokeCount; i++) {
       // Random position within cluster radius
@@ -525,13 +628,13 @@ export function createBackgroundSmoke(
       const scale = Phaser.Math.FloatBetween(0.3, 0.8);
       smoke.setScale(scale);
 
-        // Depth should be higher than planet depth to render in front
-        // Planets are at depth 11-15, so clouds in front should be at depth 16+
-        const cloudDepth = planet.depth + 1; // In front of the planet
-        smoke.setDepth(cloudDepth);
+      // Depth for smoke (above stars but below planets)
+      const smokeDepth = Phaser.Math.Between(8, 10);
+      smoke.setDepth(smokeDepth);
 
-        // Parallax factor: use planet's parallax factor for clouds in front
-        const normalizedParallaxFactor = planet.parallaxFactor;
+      // Parallax factor for smoke (similar to stars)
+      const parallaxFactor = 1 - (smokeDepth - 1) / 9;
+      const normalizedParallaxFactor = Math.max(0.1, parallaxFactor);
 
       // Random slow drift (mostly upward with slight horizontal)
       const driftAngle = Phaser.Math.FloatBetween(-Math.PI / 6, Math.PI / 6); // Slight angle variation
@@ -560,10 +663,10 @@ export function createBackgroundSmoke(
         maxAlpha,
         currentAlpha: initialAlpha,
         alphaDirection: Phaser.Math.Between(0, 1) === 0 ? 1 : -1, // Random initial direction
-          parallaxFactor: normalizedParallaxFactor,
-          depth: cloudDepth,
-        });
-      
+        parallaxFactor: normalizedParallaxFactor,
+        depth: smokeDepth,
+      });
+
       smokeCreated++;
     }
   }
@@ -660,10 +763,10 @@ export function updateStarParallax(
           ? "particleSmallStar"
           : "particleStar";
       starData.currentSpriteType = newSpriteType;
-      
+
       // Update the star's texture
       starData.star.setTexture(newSpriteType);
-      
+
       // Reset timer with random duration
       starData.spriteSwitchTimer = Phaser.Math.Between(2000, 5000);
     }
@@ -687,6 +790,18 @@ export function updateStarParallax(
       starData.baseX + parallaxOffsetX,
       starData.baseY + parallaxOffsetY
     );
+
+    // Update glow sprite position if it exists (for blue stars)
+    if (starData.glowSprite) {
+      starData.glowSprite.setPosition(
+        starData.baseX + parallaxOffsetX,
+        starData.baseY + parallaxOffsetY
+      );
+      // Also update glow sprite texture when star switches
+      if (starData.spriteSwitchTimer <= 0) {
+        starData.glowSprite.setTexture(starData.currentSpriteType);
+      }
+    }
   });
 }
 
@@ -715,64 +830,69 @@ export function createPlanets(
   const width = scene.scale.width;
   const height = scene.scale.height;
   const planets: PlanetData[] = [];
-  
+
   // All planets use the same light (one light source)
   const lightNum = Phaser.Math.Between(0, 10);
   const lightKey = `light${lightNum}`;
-  
+
   // Distribute planets across different depths for parallax
   // Planets should be above stars (stars are at depth 1-10, so planets at 11-15)
   const depths = [11, 12, 13, 14, 15]; // Very different z-space, above stars
   const minDepth = 11;
   const maxDepth = 15;
-  
+
   for (let i = 0; i < planetCount; i++) {
     // Random planet sprite (0-8)
     const planetNum = Phaser.Math.Between(0, 8);
     const planetKey = `planet${planetNum.toString().padStart(2, "0")}`;
-    
+
     // Very different z-space (depth)
     const depth = depths[i % depths.length];
-    
+
     // Parallax factor based on depth (closer = moves more)
     const parallaxFactor = (maxDepth - depth) / (maxDepth - minDepth);
-    const normalizedParallaxFactor = Math.max(0.1, Math.min(1.0, parallaxFactor));
-    
+    const normalizedParallaxFactor = Math.max(
+      0.1,
+      Math.min(1.0, parallaxFactor)
+    );
+
     // Scale based on depth (farther = smaller) - smaller overall
     const baseScale = 0.08;
     const scaleVariation = 0.05;
     const scale = baseScale + (1 - normalizedParallaxFactor) * scaleVariation;
-    
+
     // Random position (avoid overlap)
     const x = Phaser.Math.Between(width * 0.1, width * 0.9);
     const y = Phaser.Math.Between(height * 0.15, height * 0.85);
-    
+
     // Create planet using pre-made sprite
     const planet = scene.add.image(x, y, planetKey);
     planet.setScale(scale);
     planet.setDepth(depth);
     planet.setAlpha(1.0); // Fully opaque (solid)
-    
+
     // Tint planet darker/muted to fade into background (without using alpha)
     // Use a dark tint to make planets less visible and blend with background
     const tintAmount = Phaser.Math.FloatBetween(0.4, 0.6); // Darker tint for more subtle appearance
-    planet.setTint(Phaser.Display.Color.GetColor(
-      Math.floor(255 * tintAmount),
-      Math.floor(255 * tintAmount),
-      Math.floor(255 * tintAmount)
-    ));
-    
+    planet.setTint(
+      Phaser.Display.Color.GetColor(
+        Math.floor(255 * tintAmount),
+        Math.floor(255 * tintAmount),
+        Math.floor(255 * tintAmount)
+      )
+    );
+
     // Add light effect on top of planet with color blending
     // Scale light to match planet size (proportional to planet scale)
     const light = scene.add.image(x, y, lightKey);
     light.setScale(scale); // Match planet scale exactly for proper fit
     light.setDepth(depth + 0.1); // In front of planet (higher depth = on top)
     light.setAlpha(Phaser.Math.FloatBetween(0.4, 0.5));
-    
+
     // Use blend mode for better color blending with the planet
     // SCREEN or ADD work well for light effects
     light.setBlendMode(Phaser.BlendModes.SCREEN);
-    
+
     planets.push({
       planet,
       light,
@@ -783,7 +903,7 @@ export function createPlanets(
       scale,
     });
   }
-  
+
   return planets;
 }
 
@@ -810,13 +930,13 @@ export function updatePlanetParallax(
     // Calculate mouse parallax offset
     const parallaxOffsetX = mouseX * maxOffset * planetData.parallaxFactor;
     const parallaxOffsetY = mouseY * maxOffset * planetData.parallaxFactor;
-    
+
     // Update planet position
     planetData.planet.setPosition(
       planetData.baseX + parallaxOffsetX,
       planetData.baseY + parallaxOffsetY
     );
-    
+
     // Update light position if it exists
     if (planetData.light) {
       planetData.light.setPosition(
@@ -861,7 +981,7 @@ export function createAnimatedBackground(
 
   // Create parallax stars (moving stars)
   const stars = createParallaxStars(scene, starCount, 1, 10);
-  
+
   // Create static stars (farthest background layer, don't move)
   const staticStars = createStaticStars(scene, staticStarCount);
   const allStars = [...stars, ...staticStars];
@@ -870,7 +990,12 @@ export function createAnimatedBackground(
   const planets = createPlanets(scene, planetCount);
 
   // Create background smoke (positioned near star clusters and above planets)
-  const smokeParticles = createBackgroundSmoke(scene, smokeCount, allStars, planets);
+  const smokeParticles = createBackgroundSmoke(
+    scene,
+    smokeCount,
+    allStars,
+    planets
+  );
 
   // Mouse tracking for parallax
   let mouseX = 0;
@@ -884,7 +1009,7 @@ export function createAnimatedBackground(
     const centerY = scene.scale.height / 2;
     targetMouseX = (pointer.x - centerX) / centerX;
     targetMouseY = (pointer.y - centerY) / centerY;
-    
+
     targetMouseX = Phaser.Math.Clamp(targetMouseX, -1, 1);
     targetMouseY = Phaser.Math.Clamp(targetMouseY, -1, 1);
   };
@@ -902,7 +1027,7 @@ export function createAnimatedBackground(
     // Smoothly interpolate mouse position
     const smoothingSpeed = 0.05;
     const smoothingFactor = 1 - Math.pow(1 - smoothingSpeed, delta / 16);
-    
+
     mouseX = Phaser.Math.Linear(mouseX, targetMouseX, smoothingFactor);
     mouseY = Phaser.Math.Linear(mouseY, targetMouseY, smoothingFactor);
 
@@ -957,4 +1082,3 @@ export function createAnimatedBackground(
     destroy,
   };
 }
-
