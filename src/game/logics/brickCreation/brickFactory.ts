@@ -19,6 +19,8 @@ export function createBrickFromData(
   // Create Phaser DOM element
   const domElement = scene.add.dom(brickData.x, brickData.y, element);
   domElement.setOrigin(0.5, 0.5);
+  // Set depth for bricks to ensure they render below UI elements
+  domElement.setDepth(100);
 
   // Explicitly set position to ensure it's correct
   domElement.setPosition(brickData.x, brickData.y);

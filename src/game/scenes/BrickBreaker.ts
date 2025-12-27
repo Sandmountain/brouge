@@ -54,6 +54,10 @@ export class BrickBreaker extends Scene {
   private isTestMode: boolean = false;
   private isEndlessMode: boolean = false;
   private endlessModeManager: any = null; // Will be EndlessModeManager
+  private isPaused: boolean = false;
+  private pauseMenuContainer?: Phaser.GameObjects.Container;
+  private pauseMenuLayer?: Phaser.GameObjects.Layer;
+  private escKey?: Phaser.Input.Keyboard.Key;
 
   // Background manager
   private backgroundManager?: BackgroundManager;
@@ -284,10 +288,23 @@ export class BrickBreaker extends Scene {
       this.game.canvas.focus();
     }
 
+    // Set up ESC key for pause menu
+    this.escKey = this.input.keyboard?.addKey(
+      Phaser.Input.Keyboard.KeyCodes.ESC
+    );
+    this.escKey?.on("down", () => {
+      this.togglePause();
+    });
+
     EventBus.emit("current-scene-ready", this);
   }
 
   update(_time: number, delta: number) {
+    // Don't update game logic if paused
+    if (this.isPaused) {
+      return;
+    }
+
     // Update animated background
     if (this.backgroundManager) {
       this.backgroundManager.update(_time, delta);
@@ -470,5 +487,162 @@ export class BrickBreaker extends Scene {
       gameState: this.gameState,
       isTestMode: this.isTestMode,
     });
+  }
+
+  private togglePause() {
+    if (this.isPaused) {
+      this.resumeGame();
+    } else {
+      this.pauseGame();
+    }
+  }
+
+  private pauseGame() {
+    if (this.isPaused) return;
+
+    this.isPaused = true;
+    // Pause physics to stop ball movement
+    this.physics.world.pause();
+
+    // Create pause menu overlay
+    this.createPauseMenu();
+  }
+
+  private resumeGame() {
+    if (!this.isPaused) return;
+
+    this.isPaused = false;
+    // Resume physics to allow ball movement
+    this.physics.world.resume();
+
+    // Remove pause menu - destroy all stored references
+    if (this.pauseMenuContainer) {
+      const container = this.pauseMenuContainer as any;
+      if (container.overlayDOM) {
+        container.overlayDOM.destroy();
+      }
+      this.pauseMenuContainer.destroy();
+      this.pauseMenuContainer = undefined;
+    }
+    // Destroy layer
+    if (this.pauseMenuLayer) {
+      this.pauseMenuLayer.destroy();
+      this.pauseMenuLayer = undefined;
+    }
+  }
+
+  private createPauseMenu() {
+    // Create pause menu as DOM elements to ensure they render above brick DOM elements
+    // Create overlay div
+    const overlayDiv = document.createElement("div");
+    overlayDiv.style.position = "absolute";
+    overlayDiv.style.left = "0";
+    overlayDiv.style.top = "0";
+    overlayDiv.style.width = `${this.scale.width}px`;
+    overlayDiv.style.height = `${this.scale.height}px`;
+    overlayDiv.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+    overlayDiv.style.zIndex = "10000";
+    overlayDiv.style.pointerEvents = "auto";
+
+    // Create menu container div
+    const menuDiv = document.createElement("div");
+    menuDiv.style.position = "absolute";
+    menuDiv.style.left = "50%";
+    menuDiv.style.top = "50%";
+    menuDiv.style.transform = "translate(-50%, -50%)";
+    menuDiv.style.zIndex = "10001";
+    menuDiv.style.pointerEvents = "auto";
+    menuDiv.style.display = "flex";
+    menuDiv.style.flexDirection = "column";
+    menuDiv.style.alignItems = "center";
+    menuDiv.style.gap = "20px";
+
+    // Create pause title
+    const titleDiv = document.createElement("div");
+    titleDiv.textContent = "PAUSED";
+    titleDiv.style.fontSize = "48px";
+    titleDiv.style.color = "#ffffff";
+    titleDiv.style.fontFamily = "Arial Black";
+    titleDiv.style.textShadow = "2px 2px 4px rgba(0, 0, 0, 0.8)";
+    titleDiv.style.marginBottom = "20px";
+    menuDiv.appendChild(titleDiv);
+
+    // Create buttons container
+    const buttonsDiv = document.createElement("div");
+    buttonsDiv.style.display = "flex";
+    buttonsDiv.style.flexDirection = "column";
+    buttonsDiv.style.gap = "10px";
+    buttonsDiv.style.pointerEvents = "auto";
+    menuDiv.appendChild(buttonsDiv);
+
+    overlayDiv.appendChild(menuDiv);
+
+    // Create button helper function
+    const createButton = (
+      text: string,
+      bgColor: string,
+      hoverColor: string,
+      onClick: () => void
+    ) => {
+      const btn = document.createElement("button");
+      btn.textContent = text;
+      btn.style.width = "200px";
+      btn.style.height = "50px";
+      btn.style.backgroundColor = bgColor;
+      btn.style.color = "#ffffff";
+      btn.style.fontSize = "22px";
+      btn.style.fontFamily = "Arial Black";
+      btn.style.border = "2px solid rgba(0, 0, 0, 0.3)";
+      btn.style.borderRadius = "4px";
+      btn.style.cursor = "pointer";
+      btn.style.textShadow = "1px 1px 2px rgba(0, 0, 0, 0.8)";
+      btn.style.boxShadow =
+        "inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.4)";
+      btn.style.transition = "all 0.15s";
+      btn.style.pointerEvents = "auto";
+
+      btn.onmouseenter = () => {
+        btn.style.backgroundColor = hoverColor;
+        btn.style.transform = "scale(1.05)";
+      };
+      btn.onmouseleave = () => {
+        btn.style.backgroundColor = bgColor;
+        btn.style.transform = "scale(1)";
+      };
+      btn.onmousedown = () => {
+        btn.style.transform = "scale(0.95)";
+      };
+      btn.onmouseup = () => {
+        btn.style.transform = "scale(1.05)";
+        onClick();
+      };
+
+      return btn;
+    };
+
+    // Create buttons
+    const resumeBtn = createButton("RESUME", "#4ecdc4", "#6eddd4", () => {
+      this.resumeGame();
+    });
+    buttonsDiv.appendChild(resumeBtn);
+
+    const settingsBtn = createButton("SETTINGS", "#888888", "#aaaaaa", () => {
+      console.log("Settings clicked");
+    });
+    buttonsDiv.appendChild(settingsBtn);
+
+    const quitBtn = createButton("QUIT", "#cc4444", "#ee6666", () => {
+      this.scene.start("MainMenu");
+    });
+    buttonsDiv.appendChild(quitBtn);
+
+    // Create Phaser DOM element for overlay
+    const overlayDOM = this.add.dom(0, 0, overlayDiv);
+    overlayDOM.setOrigin(0, 0);
+    overlayDOM.setDepth(10000);
+
+    // Store reference in container for cleanup
+    this.pauseMenuContainer = this.add.container(0, 0);
+    (this.pauseMenuContainer as any).overlayDOM = overlayDOM;
   }
 }
