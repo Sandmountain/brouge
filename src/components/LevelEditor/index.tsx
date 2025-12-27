@@ -236,34 +236,52 @@ export function LevelEditor({
       // If halfSlot is specified, ONLY look for half-size bricks in that specific half
       // Don't return full-size blocks when a specific half is requested
       if (halfSlot !== undefined) {
-        const halfSizeBrick = levelData.bricks.find(
-          (b) =>
+        const halfSizeBrick = levelData.bricks.find((b) => {
+          // Strict equality check - col and row must be defined and match exactly
+          if (b.col === undefined || b.row === undefined) return false;
+          return (
             b.col === col &&
             b.row === row &&
             b.isHalfSize &&
             b.halfSizeAlign === halfSlot
-        );
+          );
+        });
         return halfSizeBrick || null;
       }
 
       // No halfSlot specified - look for full-size brick (occupies both halves)
       // Full-size blocks don't have isHalfSize=true
-      const fullSizeBrick = levelData.bricks.find(
-        (b) => b.col === col && b.row === row && !b.isHalfSize
-      );
+      const fullSizeBrick = levelData.bricks.find((b) => {
+        // Strict equality check - col and row must be defined and match exactly
+        if (b.col === undefined || b.row === undefined) return false;
+        return b.col === col && b.row === row && !b.isHalfSize;
+      });
       if (fullSizeBrick) return fullSizeBrick;
 
-      // Fallback: position-based lookup for backwards compatibility
+      // Fallback: position-based lookup for backwards compatibility (only for bricks without col/row)
+      // Only use this for old bricks that don't have col/row defined
       const refWidth = levelData.brickWidth || brickWidth;
       const refHeight = levelData.brickHeight || brickHeight;
       const refPadding = levelData.padding || padding;
 
+      // Calculate col/row from x/y coordinates (x and y are centers of bricks)
       return (
-        levelData.bricks.find(
-          (b) =>
-            Math.floor(b.x / (refWidth + refPadding)) === col &&
-            Math.floor(b.y / (refHeight + refPadding)) === row
-        ) || null
+        levelData.bricks.find((b) => {
+          // Skip bricks that have col/row defined - they should have been found above
+          if (b.col !== undefined && b.row !== undefined) {
+            return false;
+          }
+          // For backwards compatibility: calculate col/row from x/y (centers)
+          const calculatedCol = Math.round(
+            (b.x - refWidth / 2) / (refWidth + refPadding)
+          );
+          const calculatedRow = Math.round(
+            (b.y - refHeight / 2) / (refHeight + refPadding)
+          );
+          return (
+            calculatedCol === col && calculatedRow === row && !b.isHalfSize
+          );
+        }) || null
       );
     },
     [

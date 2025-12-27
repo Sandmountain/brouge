@@ -75,6 +75,7 @@ export function EditorGrid({
   onCellRightClick,
   onSelectionStart,
 }: EditorGridProps) {
+
   // Calculate half-size block width
   // Gap between half blocks should match the grid padding (spacing between cells)
   const halfBlockGap = padding; // Use grid padding to match spacing between cells
@@ -306,6 +307,34 @@ export function EditorGrid({
               // Full-size blocks don't have isHalfSize=true, so they won't be found by half-slot queries
               const fullBrick = getBrickAtPosition(col, row);
               const isFullSizeBlock = fullBrick && !fullBrick.isHalfSize;
+
+              // Check for position mismatches (potential ghost blocks)
+              if (leftBrick && (leftBrick.col !== col || leftBrick.row !== row)) {
+                console.warn(`[EditorGrid] ⚠️ POSITION MISMATCH - Left brick at cell [${col},${row}] but brick.col=${leftBrick.col}, brick.row=${leftBrick.row}`, {
+                  brickType: leftBrick.type,
+                  isHalfSize: leftBrick.isHalfSize,
+                  halfSizeAlign: leftBrick.halfSizeAlign,
+                  x: leftBrick.x,
+                  y: leftBrick.y,
+                });
+              }
+              if (rightBrick && (rightBrick.col !== col || rightBrick.row !== row)) {
+                console.warn(`[EditorGrid] ⚠️ POSITION MISMATCH - Right brick at cell [${col},${row}] but brick.col=${rightBrick.col}, brick.row=${rightBrick.row}`, {
+                  brickType: rightBrick.type,
+                  isHalfSize: rightBrick.isHalfSize,
+                  halfSizeAlign: rightBrick.halfSizeAlign,
+                  x: rightBrick.x,
+                  y: rightBrick.y,
+                });
+              }
+              if (fullBrick && (fullBrick.col !== col || fullBrick.row !== row)) {
+                console.warn(`[EditorGrid] ⚠️ POSITION MISMATCH - Full brick at cell [${col},${row}] but brick.col=${fullBrick.col}, brick.row=${fullBrick.row}`, {
+                  brickType: fullBrick.type,
+                  isHalfSize: fullBrick.isHalfSize,
+                  x: fullBrick.x,
+                  y: fullBrick.y,
+                });
+              }
 
               // Check if left half is in drag path
               const isLeftInDragPath =
