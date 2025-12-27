@@ -919,12 +919,12 @@ export function createPlanets(
  */
 export function updatePlanetParallax(
   planets: PlanetData[],
-  deltaTime: number,
+  _deltaTime: number,
   mouseX: number,
   mouseY: number,
   maxOffset: number = 30,
-  width: number,
-  height: number
+  _width: number,
+  _height: number
 ): void {
   planets.forEach((planetData) => {
     // Calculate mouse parallax offset
@@ -1023,7 +1023,7 @@ export function createAnimatedBackground(
   scene.input.on("pointerout", pointerOutHandler);
 
   // Update function
-  const update = (time: number, delta: number) => {
+  const update = (_time: number, delta: number) => {
     // Smoothly interpolate mouse position
     const smoothingSpeed = 0.05;
     const smoothingFactor = 1 - Math.pow(1 - smoothingSpeed, delta / 16);

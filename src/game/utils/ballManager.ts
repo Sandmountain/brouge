@@ -87,7 +87,7 @@ export function createBallManager(
 
   // Update function
   const update = (
-    delta: number,
+    _delta: number,
     ballLaunched: { value: boolean },
     shieldArc: Phaser.Physics.Arcade.Sprite
   ) => {
@@ -198,4 +198,3 @@ export function createBallManager(
     destroy,
   };
 }
-
