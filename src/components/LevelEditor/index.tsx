@@ -10,6 +10,7 @@ import { getNextPortalPairId } from "./utils/portalPairing";
 import { createBrickData } from "./utils/brickCreation";
 import { saveToStorage, loadFromStorage } from "./utils/storage";
 import { cleanBricks } from "./utils/validation";
+import { processImageToBricks } from "./utils/imageToBricks";
 import { EditorHeader } from "./components/EditorHeader";
 // BrickSelector and ColorPicker removed - functionality moved to toolbar dropdown
 import { BrickEditor } from "./components/BrickEditor";
@@ -17,6 +18,7 @@ import { EditorGrid } from "./components/EditorGrid";
 import { EditorToolbar, BrushMode } from "./components/EditorToolbar";
 import { GridSizeControls } from "./components/GridSizeControls";
 import { SettingsModal } from "./components/SettingsModal";
+import { ImageUploadModal } from "./components/ImageUploadModal";
 import { useSelection } from "./hooks/useSelection";
 import { useHistory } from "./hooks/useHistory";
 
@@ -47,6 +49,7 @@ export function LevelEditor({
   const [isFuseMode, setIsFuseMode] = useState(false);
   const [isHalfSize, setIsHalfSize] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   // Sidebar removed - brick selection moved to toolbar dropdown
 
   // Calculate available space (no sidebar anymore)
@@ -346,6 +349,48 @@ export function LevelEditor({
       });
     },
     [setLevelData, brickWidth, brickHeight, padding]
+  );
+
+  const handleImageUpload = useCallback(
+    async (
+      file: File,
+      gridWidth: number,
+      gridHeight: number,
+      imageScale: number
+    ) => {
+      try {
+        // Process the image to bricks
+        const newBricks = await processImageToBricks(
+          file,
+          gridWidth,
+          gridHeight,
+          brickWidth,
+          brickHeight,
+          padding,
+          imageScale
+        );
+
+        if (newBricks.length === 0) {
+          console.warn("No bricks created from image");
+          return;
+        }
+
+        // Update grid size and replace existing bricks with new ones from image
+        setLevelData((prev) => ({
+          ...prev,
+          width: gridWidth,
+          height: gridHeight,
+          bricks: newBricks,
+          brickWidth: prev.brickWidth || brickWidth,
+          brickHeight: prev.brickHeight || brickHeight,
+          padding: prev.padding || padding,
+        }));
+      } catch (error) {
+        console.error("Error processing image:", error);
+        alert("Failed to process image. Please try a different image.");
+      }
+    },
+    [brickWidth, brickHeight, padding, setLevelData]
   );
 
   const handleBricksErased = useCallback(
@@ -1286,6 +1331,7 @@ export function LevelEditor({
                         }
                       }}
                       onColorSelect={setSelectedColor}
+                      onImageUploadClick={() => setIsImageUploadOpen(true)}
                     />
                   </div>
                 )}
@@ -1370,6 +1416,14 @@ export function LevelEditor({
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         levelData={levelData}
+      />
+
+      <ImageUploadModal
+        isOpen={isImageUploadOpen}
+        onClose={() => setIsImageUploadOpen(false)}
+        onApply={handleImageUpload}
+        currentGridWidth={levelData.width}
+        currentGridHeight={levelData.height}
       />
     </div>
   );

@@ -8,7 +8,9 @@ import {
   Square,
   Columns,
   Settings,
+  Upload,
 } from "lucide-react";
+import { useRef } from "react";
 
 export type BrushMode = "paint" | "erase" | "single-select" | "multi-select";
 
@@ -25,6 +27,7 @@ interface EditorToolbarProps {
   onBrickTypeSelect: (type: BrickType) => void;
   onFuseModeToggle: () => void;
   onColorSelect: (color: number) => void;
+  onImageUploadClick?: () => void;
 }
 
 export function EditorToolbar({
@@ -40,7 +43,12 @@ export function EditorToolbar({
   onBrickTypeSelect,
   onFuseModeToggle,
   onColorSelect,
+  onImageUploadClick,
 }: EditorToolbarProps) {
+  const handleUploadClick = () => {
+    onImageUploadClick?.();
+  };
+
   return (
     <div
       style={{
@@ -146,6 +154,26 @@ export function EditorToolbar({
       >
         <Settings size={20} />
       </button>
+
+      {onImageUploadClick && (
+        <>
+          <div
+            style={{
+              width: "1px",
+              height: "24px",
+              background: "#e63946",
+              opacity: 0.3,
+            }}
+          />
+          <button
+            className="toolbar-button"
+            onClick={handleUploadClick}
+            title="Upload Image"
+          >
+            <Upload size={20} />
+          </button>
+        </>
+      )}
     </div>
   );
 }
