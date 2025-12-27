@@ -73,6 +73,8 @@ export function createBallManager(
   ball.setBounce(1, 1);
   ball.setCircle(10);
   ball.setVelocity(0, 0);
+  // Set depth above planets (planets are at depth 11-15, so ball should be higher)
+  ball.setDepth(20);
 
   // Ball trail effect
   const ballTrail: Phaser.GameObjects.Sprite[] = [];
@@ -114,7 +116,7 @@ export function createBallManager(
           previousBallY,
           "ball"
         );
-        ballTrailSprite.setDepth(2);
+        ballTrailSprite.setDepth(19); // Just below the ball but above planets
         ballTrailSprite.setOrigin(0.5, 0.5);
         ballTrailSprite.setAlpha(0.08);
         ballTrailSprite.setTint(0x88aaff);
